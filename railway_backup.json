@@ -1,0 +1,1 @@
+{"services": [{"name": "api", "src": ".", "docker": false}] }

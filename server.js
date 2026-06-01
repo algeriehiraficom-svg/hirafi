@@ -57,5 +57,6 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ───────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 CraftsConnect API running on port ${PORT}`));
+console.log("PORT ENV =", process.env.PORT || 8080);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 CraftsConnect API running on port ${PORT}`));
