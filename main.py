@@ -2,6 +2,7 @@
 Hirafi REST API Server - Pure Python, PostgreSQL (psycopg2), zero dependencies
 Run: python server.py
 """
+from http.server import BaseHTTPRequestHandler
 import json, os, sys, traceback, threading, time, re
 from psycopg2.extras import RealDictCursor
 
