@@ -33,6 +33,18 @@ app.use('/api/admin',      require('./routes/admin'));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).json({
+    application: 'HIRAFICOM API',
+    status: 'online',
+    version: '1.0.0'
+  });
+});
+
+// Favicon
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // 404
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 
