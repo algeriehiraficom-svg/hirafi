@@ -177,7 +177,7 @@ def init_db():
     # ── SUBSCRIPTION REQUESTS ─────────────────────────────────
     c.execute('''CREATE TABLE IF NOT EXISTS subscription_requests (
         id           TEXT PRIMARY KEY,
-        craftsman_id TEXT NOT NULL REFERENCES craftsmen(id),
+        craftsman_id UUID NOT NULL REFERENCES craftsmen(id),
         user_id      TEXT NOT NULL REFERENCES users(id),
         plan         TEXT DEFAULT 'basic',
         amount       INTEGER NOT NULL,
