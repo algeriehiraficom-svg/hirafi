@@ -227,7 +227,7 @@ def init_db():
         admin_id = str(uuid.uuid4())
         c.execute(
             "INSERT INTO users(id,phone,name,role,is_verified) VALUES(%s,%s,%s,%s,%s)",
-            (admin_id, '+213000000000', 'مدير حرفيكم', 'admin', 1)
+            (admin_id, '+213000000000', 'مدير حرفيكم', 'admin', True)
         )
         print(f"[DB] Admin user created: {admin_id}")
 
