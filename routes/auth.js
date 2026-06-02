@@ -31,10 +31,7 @@ router.post('/send-otp',
     );
 
     await sendOTP(phone, code);
-    res.json({
-      message: 'OTP sent successfully',
-      otp: code
-    });
+    res.json({ message: 'OTP sent successfully' });
   }
 );
 
