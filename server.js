@@ -34,14 +34,13 @@ app.use(express.json({ limit: '10mb' }));
 
 // ── Routes ──────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
-// DISABLED TEMPORARILY FOR DEBUGGING
-// app.use('/api/craftsmen',  require('./routes/craftsmen'));
-// app.use('/api/requests',   require('./routes/requests'));
-// app.use('/api/reviews',    require('./routes/reviews'));
-// app.use('/api/payments',   require('./routes/payments'));
-// app.use('/api/notifications', require('./routes/notifications'));
-// app.use('/api/upload',     require('./routes/upload'));
-// app.use('/api/admin',      require('./routes/admin'));
+app.use('/api/craftsmen', require('./routes/craftsmen'));
+app.use('/api/requests', require('./routes/requests'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
