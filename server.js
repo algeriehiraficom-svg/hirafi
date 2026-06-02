@@ -20,17 +20,17 @@ app.get('/railway-test', (req, res) => {
 });
 
 // ── Middleware ──────────────────────────────────────────────
-// DISABLED TEMPORARILY FOR DEBUGGING
-// app.use(helmet());
+app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
 app.use(express.json({ limit: '10mb' }));
-// app.use(morgan('dev'));
+app.use(morgan('dev'));
 
-// Rate limiting - DISABLED TEMPORARILY
-// const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-// app.use('/api/', limiter);
-// const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
-// app.use('/api/auth/', authLimiter);
+// Rate limiting
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+app.use('/api/', limiter);
+
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+app.use('/api/auth/', authLimiter);
 
 // ── Routes ──────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
