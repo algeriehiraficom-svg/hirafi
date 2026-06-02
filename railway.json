@@ -3,6 +3,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "node server-minimal.js"
+    "startCommand": "node server.js"
   }
 }
