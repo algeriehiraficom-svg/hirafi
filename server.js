@@ -23,7 +23,7 @@ app.get('/railway-test', (req, res) => {
 // DISABLED TEMPORARILY FOR DEBUGGING
 // app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
-// app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 // app.use(morgan('dev'));
 
 // Rate limiting - DISABLED TEMPORARILY
