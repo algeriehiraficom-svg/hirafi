@@ -7,11 +7,24 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+console.log('SERVER FILE = server.js');
+console.log('NODE_ENV =', process.env.NODE_ENV);
+console.log('PORT ENV =', process.env.PORT);
+
+// Railway test route - BEFORE all middleware
+app.get('/railway-test', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'railway-test'
+  });
+});
+
 // ── Middleware ──────────────────────────────────────────────
-app.use(helmet());
+// DISABLED TEMPORARILY FOR DEBUGGING
+// app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
-app.use(express.json({ limit: '10mb' }));
-app.use(morgan('dev'));
+// app.use(express.json({ limit: '10mb' }));
+// app.use(morgan('dev'));
 
 // Rate limiting - DISABLED TEMPORARILY
 // const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
