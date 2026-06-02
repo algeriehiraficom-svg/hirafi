@@ -46,6 +46,11 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
+// API test route
+app.get('/api/test', (req, res) => {
+  res.json({ ok: true });
+});
+
 // Root route
 app.get('/', (req, res) => {
   res.status(200).json({
