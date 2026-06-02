@@ -11,7 +11,7 @@ const generateToken = (id) =>
 // Helper: send OTP (stub — replace with real SMS provider)
 const sendOTP = async (phone, code) => {
   console.log(`[OTP] ${phone} → ${code}`);
-  // TODO: integrate Twilio or local SMS provider
+  return code;
 };
 
 // ── POST /api/auth/send-otp ──────────────────────────────────
@@ -31,7 +31,10 @@ router.post('/send-otp',
     );
 
     await sendOTP(phone, code);
-    res.json({ message: 'OTP sent successfully' });
+    res.json({
+      message: 'OTP sent successfully',
+      otp: code
+    });
   }
 );
 
