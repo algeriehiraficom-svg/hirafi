@@ -18,6 +18,8 @@ const sendOTP = async (phone, code) => {
 router.post('/send-otp',
   body('phone').matches(/^\+213[5-7]\d{8}$/).withMessage('Invalid Algerian phone number'),
   async (req, res) => {
+    console.log('BODY=', req.body);
+    console.log('PHONE=', req.body.phone);
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
