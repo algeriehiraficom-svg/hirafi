@@ -75,31 +75,26 @@ router.post('/verify-otp',
 
       if (!user) {
         const { rows } = await client.query(
-          'INSERT INTO users (phone, name, role) VALUES ($1, $2, $3) RETURNING *',
-          [phone, name || null, role]
+          'INSERT INTO users (phone, name, role, is_active) VALUES ($1, $2, $3, TRUE) RETURNING *',
+          [phone, name || null, role || 'client']
         );
         user = rows[0];
       } else {
-        if (user.role !== role) {
-          const { rows } = await client.query(
-            'UPDATE users SET role = $1 WHERE id = $2 RETURNING *',
-            [role, user.id]
-          );
-          user = rows[0];
-        }
+        const updateRole = role || user.role;
+        const { rows } = await client.query(
+          'UPDATE users SET role = $1, is_active = TRUE WHERE id = $2 RETURNING *',
+          [updateRole, user.id]
+        );
+        user = rows[0];
       }
 
-      if (role === 'craftsman') {
-        const { rows: craftRows } = await client.query(
-          'SELECT id FROM craftsmen WHERE user_id = $1',
+      if (user.role === 'craftsman') {
+        await client.query(
+          `INSERT INTO craftsmen (user_id, status, is_active)
+           VALUES ($1, 'draft', FALSE)
+           ON CONFLICT (user_id) DO UPDATE SET status = 'draft'`,
           [user.id]
         );
-        if (!craftRows.length) {
-          await client.query(
-            'INSERT INTO craftsmen (user_id, status) VALUES ($1, \'draft\') ON CONFLICT DO NOTHING',
-            [user.id]
-          );
-        }
       }
 
       await client.query('COMMIT');
