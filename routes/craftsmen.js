@@ -127,7 +127,8 @@ router.patch('/me', requireAuth, requireCraftsman, async (req, res) => {
 
   if (!rows.length) {
     await db.query('INSERT INTO craftsmen (user_id) VALUES ($1)', [req.user.id]);
-    { rows } = await db.query('SELECT * FROM craftsmen WHERE user_id = $1', [req.user.id]);
+    const newResult = await db.query('SELECT * FROM craftsmen WHERE user_id = $1', [req.user.id]);
+    rows = newResult.rows;
   }
 
   const craftsman_id = rows[0].id;
