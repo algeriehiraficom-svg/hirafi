@@ -41,9 +41,57 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/chat', require('./routes/chat'));
+
+// Socket.io setup
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*'
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_chat', ({ chatId }) => {
+    socket.join(`chat_${chatId}`);
+  });
+
+  socket.on('send_message', async (data) => {
+    const { chatId, senderId, message } = data;
+
+    await db.query(
+      'INSERT INTO chat_messages (chat_id, sender_id, message) VALUES ($1, $2, $3)',
+      [chatId, senderId, message]
+    );
+
+    io.to(`chat_${chatId}`).emit('new_message', {
+      chatId,
+      senderId,
+      message,
+      created_at: new Date().toISOString()
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
+
+// System health endpoint
+app.get('/system/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
 
 // API test route
 app.get('/api/test', (req, res) => {
@@ -76,4 +124,4 @@ app.use((err, req, res, next) => {
 // ── Start ───────────────────────────────────────────────────
 console.log("PORT ENV =", process.env.PORT || 8080);
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 CraftsConnect API running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 CraftsConnect API running on port ${PORT}`));

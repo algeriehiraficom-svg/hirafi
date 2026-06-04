@@ -51,11 +51,17 @@ CREATE TABLE craftsmen (
   total_jobs      INT DEFAULT 0,
   is_available    BOOLEAN DEFAULT TRUE,
   is_verified     BOOLEAN DEFAULT FALSE,
+  is_active       BOOLEAN DEFAULT FALSE,
   location        GEOGRAPHY(POINT, 4326),  -- GPS: lng, lat
+  gps_lat         NUMERIC(10, 8),
+  gps_lng         NUMERIC(11, 8),
   city            VARCHAR(100),
   wilaya          VARCHAR(100),
   subscription_active BOOLEAN DEFAULT FALSE,
+  subscription_status VARCHAR(20) DEFAULT 'inactive',
+  profile_completed BOOLEAN DEFAULT FALSE,
   wallet_balance  INT DEFAULT 0,    -- in DZD
+  status          VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft','pending','approved','active','rejected','suspended')),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -186,17 +192,31 @@ CREATE TABLE notifications (
 );
 
 -- ============================================================
--- MESSAGES (chat per request)
+-- CHATS (user ↔ craftsman conversations)
 -- ============================================================
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS chats (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  craftsman_id UUID NOT NULL REFERENCES craftsmen(id) ON DELETE CASCADE,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chats_user ON chats(user_id);
+CREATE INDEX IF NOT EXISTS idx_chats_craftsman ON chats(craftsman_id);
+
+-- ============================================================
+-- MESSAGES (chat per request) - UPDATED FOR CHAT SUPPORT
+-- ============================================================
+CREATE TABLE IF NOT EXISTS chat_messages (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  chat_id    UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
   sender_id  UUID NOT NULL REFERENCES users(id),
-  content    TEXT NOT NULL,
-  type       VARCHAR(20) DEFAULT 'text' CHECK (type IN ('text','image','system')),
-  read_at    TIMESTAMPTZ,
+  message    TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON chat_messages(chat_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages(sender_id);
 
 -- ============================================================
 -- INDEXES
@@ -239,3 +259,14 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_update_rating
 AFTER INSERT ON reviews
 FOR EACH ROW EXECUTE FUNCTION refresh_craftsman_rating();
+
+-- ============================================================
+-- FAILED EVENTS (Observability)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS failed_events (
+  id         SERIAL PRIMARY KEY,
+  type       VARCHAR(100) NOT NULL,
+  payload    JSONB,
+  error      TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

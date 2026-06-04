@@ -1,12 +1,66 @@
 const router = require('express').Router();
 const db = require('../config/db');
-const { auth, requireRole } = require('../middleware/auth');
+
+const validateCoordinates = (lat, lng) => {
+  const numLat = parseFloat(lat);
+  const numLng = parseFloat(lng);
+  if (isNaN(numLat) || isNaN(numLng)) return false;
+  if (numLat < -90 || numLat > 90) return false;
+  if (numLng < -180 || numLng > 180) return false;
+  return true;
+};
+
+const requireAuth = async (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { rows } = await db.query(
+      'SELECT id, phone, name, role, is_active FROM users WHERE id = $1',
+      [decoded.id]
+    );
+
+    if (!rows.length || !rows[0].is_active) {
+      return res.status(401).json({ error: 'Account not found or suspended' });
+    }
+
+    req.user = rows[0];
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+const requireCraftsman = async (req, res, next) => {
+  const { rows } = await db.query(
+    'SELECT role FROM users WHERE id = $1',
+    [req.user.id]
+  );
+
+  if (!rows.length) {
+    return res.status(401).json({ error: 'User not found' });
+  }
+
+  if (rows[0].role !== 'craftsman') {
+    return res.status(403).json({ error: 'Craftsman only' });
+  }
+
+  req.user.role = 'craftsman';
+  next();
+};
 
 // ── GET /api/craftsmen/nearby ────────────────────────────────
-// Query: lat, lng, radius (km, default 10), specialty_id
-router.get('/nearby', auth, async (req, res) => {
+router.get('/nearby', requireAuth, async (req, res) => {
   const { lat, lng, radius = 10, specialty_id } = req.query;
-  if (!lat || !lng) return res.status(400).json({ error: 'lat and lng are required' });
+  if (!validateCoordinates(lat, lng)) {
+    return res.status(400).json({ error: 'Invalid GPS coordinates' });
+  }
+
+  const lngNum = parseFloat(lng);
+  const latNum = parseFloat(lat);
+  const radiusMeters = parseFloat(radius) * 1000;
 
   let q = `
     SELECT
@@ -19,12 +73,12 @@ router.get('/nearby', auth, async (req, res) => {
     JOIN users u ON u.id = c.user_id
     LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
     LEFT JOIN specialties s ON s.id = cs.specialty_id
-    WHERE c.is_verified = TRUE
+    WHERE c.is_active = TRUE
       AND c.is_available = TRUE
       AND c.subscription_active = TRUE
       AND ST_DWithin(c.location, ST_MakePoint($1, $2)::geography, $3)
   `;
-  const params = [parseFloat(lng), parseFloat(lat), parseFloat(radius) * 1000];
+  const params = [lngNum, latNum, radiusMeters];
 
   if (specialty_id) {
     q += ` AND cs.specialty_id = $4`;
@@ -63,21 +117,30 @@ router.get('/:id', async (req, res) => {
 });
 
 // ── PATCH /api/craftsmen/me ──────────────────────────────────
-router.patch('/me', auth, requireRole('craftsman'), async (req, res) => {
+router.patch('/me', requireAuth, requireCraftsman, async (req, res) => {
   const { bio, experience_years, price_min, price_max, city, wilaya, is_available, specialties } = req.body;
 
-  const { rows } = await db.query(`
+  let { rows } = await db.query(
+    'SELECT * FROM craftsmen WHERE user_id = $1',
+    [req.user.id]
+  );
+
+  if (!rows.length) {
+    await db.query('INSERT INTO craftsmen (user_id) VALUES ($1)', [req.user.id]);
+    { rows } = await db.query('SELECT * FROM craftsmen WHERE user_id = $1', [req.user.id]);
+  }
+
+  const craftsman_id = rows[0].id;
+
+  await db.query(`
     UPDATE craftsmen SET
       bio=$1, experience_years=$2, price_min=$3, price_max=$4,
       city=$5, wilaya=$6, is_available=$7, updated_at=NOW()
-    WHERE user_id=$8 RETURNING *
-  `, [bio, experience_years, price_min, price_max, city, wilaya, is_available, req.user.id]);
+    WHERE user_id=$8`,
+    [bio, experience_years, price_min, price_max, city, wilaya, is_available, req.user.id]
+  );
 
-  if (!rows.length) return res.status(404).json({ error: 'Craftsman profile not found' });
-
-  // Update specialties
   if (Array.isArray(specialties)) {
-    const craftsman_id = rows[0].id;
     await db.query('DELETE FROM craftsman_specialties WHERE craftsman_id = $1', [craftsman_id]);
     for (const sid of specialties) {
       await db.query(
@@ -87,24 +150,146 @@ router.patch('/me', auth, requireRole('craftsman'), async (req, res) => {
     }
   }
 
-  res.json(rows[0]);
+  const { rows: updated } = await db.query('SELECT * FROM craftsmen WHERE id = $1', [craftsman_id]);
+  res.json(updated[0]);
 });
 
-// ── PATCH /api/craftsmen/me/location ────────────────────────
-router.patch('/me/location', auth, requireRole('craftsman'), async (req, res) => {
+// ── PUT /api/craftsmen/me/location ─────────────────────────────
+router.put('/me/location', requireAuth, requireCraftsman, async (req, res) => {
+  const userId = req.user.id;
   const { lat, lng } = req.body;
-  if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' });
 
-  await db.query(
-    `UPDATE craftsmen SET location = ST_MakePoint($1, $2)::geography WHERE user_id = $3`,
-    [parseFloat(lng), parseFloat(lat), req.user.id]
+  if (!validateCoordinates(lat, lng)) {
+    return res.status(400).json({ error: 'Invalid GPS coordinates' });
+  }
+
+  let { rows } = await db.query(
+    'SELECT * FROM craftsmen WHERE user_id = $1',
+    [userId]
   );
-  res.json({ message: 'Location updated' });
+
+  if (!rows.length) {
+    await db.query(
+      `INSERT INTO craftsmen (user_id, location)
+       VALUES ($1, ST_MakePoint($2, $3)::geography)`,
+      [userId, parseFloat(lng), parseFloat(lat)]
+    );
+  } else {
+    await db.query(
+      `UPDATE craftsmen
+       SET location = ST_MakePoint($1, $2)::geography,
+           updated_at = NOW()
+       WHERE user_id = $3`,
+      [parseFloat(lng), parseFloat(lat), userId]
+    );
+  }
+
+  return res.json({ success: true, location: { lat, lng } });
+});
+
+// ── POST /api/craftsmen/profile ──────────────────────────────
+router.post('/profile', requireAuth, requireCraftsman, async (req, res) => {
+  const userId = req.user.id;
+  const { lat, lng, category, specialties } = req.body;
+
+  if (!validateCoordinates(lat, lng)) {
+    return res.status(400).json({ error: 'Invalid GPS coordinates' });
+  }
+
+  const { rows: existing } = await db.query(
+    'SELECT id FROM craftsmen WHERE user_id = $1',
+    [userId]
+  );
+
+  if (existing.length) {
+    await db.query(`
+      UPDATE craftsmen SET
+        profile_completed = true,
+        gps_lat = $1,
+        gps_lng = $2,
+        category = $3,
+        status = 'pending',
+        location = ST_MakePoint($2, $1)::geography,
+        updated_at = NOW()
+      WHERE user_id = $4
+    `, [lat, lng, category, userId]);
+  } else {
+    await db.query(`
+      INSERT INTO craftsmen (
+        user_id,
+        status,
+        profile_completed,
+        gps_lat,
+        gps_lng,
+        category,
+        location
+      ) VALUES ($1, 'pending', true, $2, $3, $4, ST_MakePoint($3, $2)::geography)
+    `, [userId, lat, lng, category]);
+  }
+
+  if (Array.isArray(specialties)) {
+    const { rows: cm } = await db.query('SELECT id FROM craftsmen WHERE user_id = $1', [userId]);
+    const craftsmanId = cm[0]?.id;
+
+    if (craftsmanId) {
+      await db.query('DELETE FROM craftsman_specialties WHERE craftsman_id = $1', [craftsmanId]);
+      for (const sid of specialties) {
+        await db.query(
+          'INSERT INTO craftsman_specialties (craftsman_id, specialty_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [craftsmanId, sid]
+        );
+      }
+    }
+  }
+
+  res.json({ success: true });
 });
 
 // ── GET /api/craftsmen/specialties/all ──────────────────────
 router.get('/specialties/all', async (req, res) => {
   const { rows } = await db.query('SELECT * FROM specialties ORDER BY id');
+  res.json(rows);
+});
+
+// ── GET /api/craftsmen/search ────────────────────────────────
+router.get('/search', async (req, res) => {
+  const { lat, lng, radius = 20 } = req.query;
+
+  if (!validateCoordinates(lat, lng)) {
+    return res.status(400).json({ error: 'Invalid GPS coordinates' });
+  }
+
+  const latNum = parseFloat(lat);
+  const lngNum = parseFloat(lng);
+  const radiusKm = parseFloat(radius);
+
+  const { rows } = await db.query(
+    `SELECT
+      c.id, c.rating, c.total_jobs, c.price_min, c.price_max,
+      c.is_available, c.city,
+      u.name, u.avatar_url,
+      (6371 * acos(
+        cos(radians($1)) *
+        cos(radians(ST_Y(c.location::geometry))) *
+        cos(radians(ST_X(c.location::geometry) - radians($2)) +
+        sin(radians($1)) *
+        sin(radians(ST_Y(c.location::geometry))
+      )) AS distance
+    FROM craftsmen c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.status = 'active'
+      AND (6371 * acos(
+        cos(radians($1)) *
+        cos(radians(ST_Y(c.location::geometry))) *
+        cos(radians(ST_X(c.location::geometry) - radians($2)) +
+        sin(radians($1)) *
+        sin(radians(ST_Y(c.location::geometry))
+      )) < $3
+    ORDER BY distance ASC
+    LIMIT 50`,
+    [latNum, lngNum, radiusKm]
+  );
+
   res.json(rows);
 });
 
