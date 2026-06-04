@@ -48,7 +48,7 @@ router.post('/verify-otp',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { phone, code, role, name } = req.body;
-    const client = await db.connect();
+    const client = await db.getClient();
 
     try {
       await client.query('BEGIN');

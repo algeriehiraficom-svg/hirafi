@@ -24,6 +24,9 @@ app.get('/railway-test', (req, res) => {
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
 app.use(express.json({ limit: '10mb' }));
+app.set('trust proxy', 1);
+
+// Rate limiting;
 app.use(morgan('dev'));
 
 // Rate limiting
