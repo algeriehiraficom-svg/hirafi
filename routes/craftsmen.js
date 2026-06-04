@@ -17,6 +17,12 @@ const requireAuth = async (req, res, next) => {
   try {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Handle admin tokens
+    if (decoded.role === 'admin') {
+      return res.status(403).json({ error: 'Admin cannot register as craftsman' });
+    }
+
     const { rows } = await db.query(
       'SELECT id, phone, name, role, is_active FROM users WHERE id = $1',
       [decoded.id]
@@ -50,6 +56,39 @@ const requireCraftsman = async (req, res, next) => {
   req.user.role = 'craftsman';
   next();
 };
+
+// ── POST /api/craftsmen/register ───────────────────────────────
+router.post('/register', requireAuth, async (req, res) => {
+  const { specialty, wilaya, address, description, phone } = req.body;
+
+  // Verify phone matches authenticated user
+  if (phone !== req.user.phone) {
+    return res.status(403).json({ error: 'Phone mismatch' });
+  }
+
+  // Set user role to craftsman
+  await db.query(
+    'UPDATE users SET role = $1, is_active = TRUE WHERE id = $2',
+    ['craftsman', req.user.id]
+  );
+
+  // Insert or update craftsman profile
+  const { rows } = await db.query(
+    `INSERT INTO craftsmen (user_id, category, wilaya, city, bio, status, is_active)
+     VALUES ($1, $2, $3, $4, $5, 'draft', FALSE)
+     ON CONFLICT (user_id) DO UPDATE SET
+       category = EXCLUDED.category,
+       wilaya = EXCLUDED.wilaya,
+       city = EXCLUDED.city,
+       bio = EXCLUDED.bio,
+       status = 'draft',
+       is_active = FALSE
+     RETURNING *`,
+    [req.user.id, specialty, wilaya, address, description]
+  );
+
+  res.json({ success: true, craftsman: rows[0] });
+});
 
 // ── GET /api/craftsmen/nearby ────────────────────────────────
 router.get('/nearby', requireAuth, async (req, res) => {
