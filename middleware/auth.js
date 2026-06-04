@@ -37,4 +37,11 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { auth, requireRole };
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+  next();
+};
+
+module.exports = { auth, requireRole, requireAdmin };

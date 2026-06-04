@@ -133,7 +133,12 @@ router.get('/me', require('../middleware/auth').auth, async (req, res) => {
 });
 
 // ── PATCH /api/auth/profile ──────────────────────────────────
-router.patch('/profile', require('../middleware/auth').auth, async (req, res) => {
+router.patch('/profile', require('../middleware/auth').auth, (req, res, next) => {
+  if (req.user.role === 'admin') {
+    return res.status(403).json({ error: 'Admins cannot update profile' });
+  }
+  next();
+}, async (req, res) => {
   const { name, email, fcm_token } = req.body;
   const { rows } = await db.query(
     'UPDATE users SET name=$1, email=$2, fcm_token=$3 WHERE id=$4 RETURNING *',
