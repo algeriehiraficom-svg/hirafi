@@ -90,9 +90,26 @@ router.post('/verify-otp',
 
       if (user.role === 'craftsman') {
         await client.query(
-          `INSERT INTO craftsmen (user_id, status, is_active)
-           VALUES ($1, 'draft', FALSE)
-           ON CONFLICT (user_id) DO UPDATE SET status = 'draft'`,
+          `INSERT INTO craftsmen (
+              user_id,
+              is_verified,
+              is_available,
+              subscription_active,
+              wallet_balance,
+              total_reviews,
+              total_jobs
+          )
+          VALUES (
+              $1,
+              FALSE,
+              FALSE,
+              FALSE,
+              0,
+              0,
+              0
+          )
+          ON CONFLICT (user_id)
+          DO NOTHING`,
           [user.id]
         );
       }

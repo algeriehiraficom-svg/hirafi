@@ -59,12 +59,14 @@ const requireCraftsman = async (req, res, next) => {
 
 // ── POST /api/craftsmen/register ───────────────────────────────
 router.post('/register', requireAuth, async (req, res) => {
-  const { specialty, wilaya, address, description, phone } = req.body;
-
-  // Verify phone matches authenticated user
-  if (phone !== req.user.phone) {
-    return res.status(403).json({ error: 'Phone mismatch' });
-  }
+  console.log('REGISTER BODY =', req.body);
+  const { specialties, wilayaCode, address, description } = req.body;
+  console.log('PARSED VALUES =', {
+    specialties,
+    wilayaCode,
+    address,
+    description
+  });
 
   // Set user role to craftsman
   await db.query(
@@ -74,18 +76,26 @@ router.post('/register', requireAuth, async (req, res) => {
 
   // Insert or update craftsman profile
   const { rows } = await db.query(
-    `INSERT INTO craftsmen (user_id, category, wilaya, city, bio, status, is_active)
-     VALUES ($1, $2, $3, $4, $5, 'draft', FALSE)
+    `INSERT INTO craftsmen (user_id, wilaya, city, bio)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (user_id) DO UPDATE SET
-       category = EXCLUDED.category,
        wilaya = EXCLUDED.wilaya,
        city = EXCLUDED.city,
-       bio = EXCLUDED.bio,
-       status = 'draft',
-       is_active = FALSE
+       bio = EXCLUDED.bio
      RETURNING *`,
-    [req.user.id, specialty, wilaya, address, description]
+    [req.user.id, wilayaCode, address, description]
   );
+
+  // Link specialties (array of IDs)
+  if (Array.isArray(specialties)) {
+    await db.query('DELETE FROM craftsman_specialties WHERE craftsman_id = $1', [rows[0].id]);
+    for (const sid of specialties) {
+      await db.query(
+        'INSERT INTO craftsman_specialties (craftsman_id, specialty_id) VALUES ($1, $2) ON CONFLICT (craftsman_id, specialty_id) DO NOTHING',
+        [rows[0].id, sid]
+      );
+    }
+  }
 
   res.json({ success: true, craftsman: rows[0] });
 });
