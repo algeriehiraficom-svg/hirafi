@@ -86,14 +86,21 @@ router.post('/register', requireAuth, async (req, res) => {
     [req.user.id, wilayaCode, address, description]
   );
 
-  // Link specialties (array of IDs)
-  if (Array.isArray(specialties)) {
+  // Link specialties (array of codes)
+  console.log('SPECIALTIES RECEIVED =', specialties);
+  if (Array.isArray(specialties) && specialties.length) {
     await db.query('DELETE FROM craftsman_specialties WHERE craftsman_id = $1', [rows[0].id]);
-    for (const sid of specialties) {
-      await db.query(
-        'INSERT INTO craftsman_specialties (craftsman_id, specialty_id) VALUES ($1, $2) ON CONFLICT (craftsman_id, specialty_id) DO NOTHING',
-        [rows[0].id, sid]
+    for (const code of specialties) {
+      const { rows: specRows } = await db.query(
+        'SELECT id FROM specialties WHERE code = $1',
+        [code]
       );
+      if (specRows.length) {
+        await db.query(
+          'INSERT INTO craftsman_specialties (craftsman_id, specialty_id) VALUES ($1, $2) ON CONFLICT (craftsman_id, specialty_id) DO NOTHING',
+          [rows[0].id, specRows[0].id]
+        );
+      }
     }
   }
 

@@ -71,23 +71,23 @@ CREATE TABLE craftsmen (
 -- ============================================================
 CREATE TABLE specialties (
   id       SERIAL PRIMARY KEY,
+  code     VARCHAR(50) UNIQUE,
   name_ar  VARCHAR(100) NOT NULL,
   name_fr  VARCHAR(100),
   icon     VARCHAR(10),
   category VARCHAR(50)
 );
 
-INSERT INTO specialties (name_ar, name_fr, icon, category) VALUES
-  ('سباكة', 'Plomberie', '🔧', 'construction'),
-  ('كهرباء', 'Électricité', '⚡', 'construction'),
-  ('نجارة', 'Menuiserie', '🪵', 'construction'),
-  ('دهان', 'Peinture', '🎨', 'construction'),
-  ('تكييف وتبريد', 'Climatisation', '❄️', 'appliances'),
-  ('بلاط وسيراميك', 'Carrelage', '🏠', 'construction'),
-  ('لحام', 'Soudure', '🔩', 'construction'),
-  ('إصلاح أجهزة', 'Électroménager', '📺', 'appliances'),
-  ('بناء وإسمنت', 'Maçonnerie', '🧱', 'construction'),
-  ('تنظيف', 'Nettoyage', '🧹', 'cleaning');
+INSERT INTO specialties (code, name_ar, name_fr, icon, category) VALUES
+  ('plumber', 'السباكة', 'Plomberie', '🔧', 'construction'),
+  ('electrician', 'الكهرباء', 'Électricité', '⚡', 'construction'),
+  ('carpenter', 'النجارة', 'Menuiserie', '🪵', 'construction'),
+  ('masonry', 'البناء', 'Maçonnerie', '🧱', 'construction'),
+  ('ac', 'التبريد والتكييف', 'Climatisation', '❄️', 'appliances'),
+  ('smith', 'الحدادة واللحام', 'Soudure', '🔩', 'construction'),
+  ('mechanic', 'الميكانيك', 'Mécanique', '🔧', 'construction'),
+  ('cleaning', 'التنظيف', 'Nettoyage', '🧹', 'cleaning'),
+  ('gardening', 'البستنة', 'Jardinage', '🌿', 'cleaning');
 
 -- Craftsman ↔ Specialty (many-to-many)
 CREATE TABLE craftsman_specialties (
