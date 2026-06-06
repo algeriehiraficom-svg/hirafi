@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const db = require('../config/db');
 const { auth, requireRole } = require('../middleware/auth');
-const activationService = require('../services/activationService');
 
 const adminOnly = [auth, requireRole('admin')];
 
@@ -23,7 +22,7 @@ router.get('/stats', ...adminOnly, async (req, res) => {
 
 // ── GET /api/admin/craftsmen ─────────────────────────────────
 router.get('/craftsmen', ...adminOnly, async (req, res) => {
-  const { status, city, page = 1, limit = 20 } = req.query;
+  const { city, page = 1, limit = 20 } = req.query;
   const offset = (page - 1) * limit;
 
   let q = `
@@ -36,7 +35,6 @@ router.get('/craftsmen', ...adminOnly, async (req, res) => {
     WHERE 1=1
   `;
   const params = [];
-  if (status) { params.unshift(status); q += ` AND c.status = $1`; }
   if (city) { params.push(city); q += ` AND c.city = $${params.length}`; }
 
   q += ` GROUP BY c.id, u.name, u.phone, u.email ORDER BY c.created_at DESC LIMIT $${params.length+1} OFFSET $${params.length+2}`;
@@ -50,7 +48,6 @@ router.get('/craftsmen', ...adminOnly, async (req, res) => {
 router.post('/craftsmen/:id/approve', ...adminOnly, async (req, res) => {
   const craftsmanId = req.params.id;
 
-  // Get user_id first
   const { rows: cm } = await db.query(
     'SELECT user_id FROM craftsmen WHERE id = $1',
     [craftsmanId]
@@ -60,12 +57,9 @@ router.post('/craftsmen/:id/approve', ...adminOnly, async (req, res) => {
     return res.status(404).json({ error: 'Craftsman not found' });
   }
 
-  const userId = cm[0].user_id;
-
-  // Approve craftsman (set status to active directly)
   await db.query(
-    'UPDATE craftsmen SET status = $1, is_verified = true, is_active = true WHERE id = $2',
-    ['active', craftsmanId]
+    'UPDATE craftsmen SET is_verified = true, is_available = true WHERE id = $1',
+    [craftsmanId]
   );
 
   res.json({ message: 'Craftsman approved and activated' });
@@ -76,8 +70,8 @@ router.post('/craftsmen/:id/reject', ...adminOnly, async (req, res) => {
   const craftsmanId = req.params.id;
 
   await db.query(
-    'UPDATE craftsmen SET status = $1, is_active = false WHERE id = $2',
-    ['rejected', craftsmanId]
+    'UPDATE craftsmen SET is_verified = false, is_available = false WHERE id = $1',
+    [craftsmanId]
   );
 
   res.json({ message: 'Craftsman rejected' });
@@ -88,8 +82,8 @@ router.post('/craftsmen/:id/suspend', ...adminOnly, async (req, res) => {
   const craftsmanId = req.params.id;
 
   await db.query(
-    'UPDATE craftsmen SET status = $1, is_active = false WHERE id = $2',
-    ['suspended', craftsmanId]
+    'UPDATE craftsmen SET is_verified = false, is_available = false WHERE id = $1',
+    [craftsmanId]
   );
 
   res.json({ message: 'Craftsman suspended' });
@@ -97,7 +91,7 @@ router.post('/craftsmen/:id/suspend', ...adminOnly, async (req, res) => {
 
 // ── PATCH /api/admin/users/:id/suspend ──────────────────────
 router.patch('/users/:id/suspend', ...adminOnly, async (req, res) => {
-  await db.query('UPDATE users SET is_active=FALSE WHERE id=$1', [req.params.id]);
+  await db.query('UPDATE users SET is_active = false WHERE id = $1', [req.params.id]);
   res.json({ message: 'User suspended' });
 });
 
