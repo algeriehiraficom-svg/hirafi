@@ -642,7 +642,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('settings-api-url').value = API;
   document.getElementById('settings-token').value = TOKEN;
   document.getElementById('api-url-display').textContent = API;
-  if (TOKEN) connectAPI();
+  if (TOKEN) {
+    connectAPI();
+    setInterval(refreshAll, 5000); // Auto-refresh every 5 seconds
+  }
 });
 
 function connectAPI() {
@@ -710,6 +713,13 @@ async function refreshAll() {
     document.getElementById('stat-requests').textContent = (stats.requests_active || 0);
     document.getElementById('stat-requests-pending').textContent = (stats.requests_pending || 0) + ' معلق';
     document.getElementById('pending-badge').textContent = stats.requests_pending || 0;
+  }
+  
+  // Load pending requests count
+  const pendingReqs = await api('/api/admin/requests?status=pending');
+  if (!pendingReqs.error && Array.isArray(pendingReqs)) {
+    document.getElementById('stat-requests-pending').textContent = pendingReqs.length + ' معلق';
+    document.getElementById('pending-badge').textContent = pendingReqs.length;
   }
 
   if (!requests.error && Array.isArray(requests)) {

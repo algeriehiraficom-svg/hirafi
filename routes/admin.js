@@ -6,17 +6,21 @@ const adminOnly = [auth, requireRole('admin')];
 
 // ── GET /api/admin/stats ─────────────────────────────────────
 router.get('/stats', ...adminOnly, async (req, res) => {
-  const [users, craftsmen, requests, revenue] = await Promise.all([
+  const [clients, craftsmen, activeRequests, pendingRequests, revenue] = await Promise.all([
     db.query('SELECT COUNT(*) FROM users WHERE role = $1', ['client']),
-    db.query('SELECT COUNT(*) FROM craftsmen'),
+    db.query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE subscription_active = true) as subscribed FROM craftsmen'),
+    db.query("SELECT COUNT(*) FROM requests WHERE status IN ('accepted', 'in_progress')"),
+    db.query("SELECT COUNT(*) FROM requests WHERE status = 'pending'"),
     db.query("SELECT COUNT(*) FROM requests WHERE status = 'completed'"),
     db.query("SELECT COALESCE(SUM(amount),0) AS total FROM transactions WHERE type IN ('subscription','commission') AND created_at >= date_trunc('month', NOW())"),
   ]);
   res.json({
-    total_clients:     parseInt(users.rows[0].count),
-    total_craftsmen:   parseInt(craftsmen.rows[0].count),
-    completed_requests: parseInt(requests.rows[0].count),
-    monthly_revenue:   parseInt(revenue.rows[0].total),
+    clients: parseInt(clients.rows[0].count),
+    craftsmen: parseInt(craftsmen.rows[0].total),
+    craftsmen_subscribed: parseInt(craftsmen.rows[0].subscribed),
+    requests_active: parseInt(activeRequests.rows[0].count),
+    requests_pending: parseInt(pendingRequests.rows[0].count),
+    revenue_month: parseInt(revenue.rows[0].total),
   });
 });
 
