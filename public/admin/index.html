@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حرفيكم — لوحة الإدارة</title>
+<style>
+  :root {
+    --primary: #E8A838;
+    --primary-dark: #c8891a;
+    --bg: #0F1117;
+    --card: #1A1D27;
+    --card2: #222535;
+    --border: #2E3148;
+    --text: #E8EAF6;
+    --text2: #9BA3C2;
+    --green: #22C55E;
+    --red: #EF4444;
+    --blue: #3B82F6;
+    --purple: #A855F7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--card); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; position: fixed; height: 100vh; right: 0; z-index: 100;
+  }
+  .main { margin-right: 240px; flex: 1; padding: 24px; }
+
+  /* Sidebar */
+  .sidebar-logo {
+    padding: 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon { width: 40px; height: 40px; background: var(--primary); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .logo-text { font-size: 18px; font-weight: 700; color: var(--text); }
+  .logo-sub  { font-size: 11px; color: var(--text2); }
+
+  .nav { padding: 12px 0; flex: 1; overflow-y: auto; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text2); font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    cursor: pointer; border-radius: 8px; margin: 2px 8px; transition: all 0.2s;
+    font-size: 14px; color: var(--text2); text-decoration: none;
+  }
+  .nav-item:hover { background: var(--card2); color: var(--text); }
+  .nav-item.active { background: rgba(232,168,56,0.15); color: var(--primary); }
+  .nav-item .icon { width: 18px; text-align: center; font-size: 16px; }
+  .badge { background: var(--red); color: white; border-radius: 10px;
+    padding: 1px 6px; font-size: 10px; margin-right: auto; }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .btn {
+    padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: #000; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--card2); color: var(--text); }
+
+  /* Stats cards */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; right: 0; width: 4px; height: 100%;
+  }
+  .stat-card.gold::before { background: var(--primary); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.blue::before { background: var(--blue); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .stat-change { font-size: 12px; }
+  .stat-change.up { color: var(--green); }
+  .stat-change.down { color: var(--red); }
+  .stat-icon { position: absolute; top: 20px; left: 20px; font-size: 28px; opacity: 0.3; }
+
+  /* Grid 2 col */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+  /* Card */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-action { font-size: 12px; color: var(--primary); cursor: pointer; }
+
+  /* Table */
+  .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table th { padding: 10px 12px; text-align: right; color: var(--text2); font-weight: 500;
+    border-bottom: 1px solid var(--border); background: var(--card2); }
+  .table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .table tr:hover td { background: rgba(255,255,255,0.02); }
+  .table tr:last-child td { border-bottom: none; }
+
+  /* Status badges */
+  .status {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .status.pending   { background: rgba(251,191,36,0.15); color: #FBD024; }
+  .status.accepted  { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .status.in_progress { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .status.completed { background: rgba(34,197,94,0.15); color: var(--green); }
+  .status.cancelled { background: rgba(239,68,68,0.15); color: var(--red); }
+  .status.verified  { background: rgba(34,197,94,0.15); color: var(--green); }
+  .status.unverified{ background: rgba(251,191,36,0.15); color: #FBD024; }
+
+  /* Avatar */
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    font-weight: 700; color: #000; flex-shrink: 0;
+  }
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .user-name { font-weight: 500; }
+  .user-phone { font-size: 11px; color: var(--text2); }
+
+  /* Stars */
+  .stars { color: var(--primary); font-size: 12px; letter-spacing: 1px; }
+
+  /* Chart bar */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { width: 80px; font-size: 12px; color: var(--text2); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 4px; background: var(--primary); transition: width 0.8s ease; }
+  .bar-val   { width: 50px; font-size: 12px; color: var(--text2); text-align: left; }
+
+  /* Search */
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .search-input {
+    flex: 1; min-width: 200px; padding: 8px 12px; background: var(--card2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 13px; outline: none;
+  }
+  .search-input:focus { border-color: var(--primary); }
+  .filter-select {
+    padding: 8px 12px; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px; outline: none; cursor: pointer;
+  }
+
+  /* Pagination */
+  .pagination { display: flex; justify-content: center; gap: 4px; padding-top: 16px; }
+  .page-btn {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); cursor: pointer; font-size: 13px;
+  }
+  .page-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+  .page-btn:hover:not(.active) { background: var(--card2); color: var(--text); }
+
+  /* Modal */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; min-width: 400px; max-width: 600px; width: 90%;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: var(--text2); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 10px 12px; background: var(--card2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-size: 14px; outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 24px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px;
+    font-size: 13px; z-index: 300; transform: translateY(100px); transition: transform 0.3s;
+    min-width: 250px; display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateY(0); }
+  .toast.success { border-right: 3px solid var(--green); }
+  .toast.error   { border-right: 3px solid var(--red); }
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Spinner */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border);
+    border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Revenue mini chart */
+  .revenue-bars { display: flex; align-items: flex-end; gap: 4px; height: 60px; }
+  .rev-bar { flex: 1; background: var(--primary); border-radius: 3px 3px 0 0; opacity: 0.7; min-width: 8px; }
+
+  .loading-overlay {
+    position: absolute; inset: 0; background: rgba(15,17,23,0.8);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px; z-index: 10;
+  }
+  .card { position: relative; }
+
+  /* Config panel */
+  .config-bar {
+    background: var(--card2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;
+    font-size: 13px;
+  }
+  .config-bar label { color: var(--text2); }
+  .config-bar input { padding: 6px 10px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px; width: 220px; outline: none; }
+  .config-bar input:focus { border-color: var(--primary); }
+
+  @media(max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🔨</div>
+      <div>
+        <div class="logo-text">حرفيكم</div>
+        <div class="logo-sub">لوحة الإدارة</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">الرئيسية</div>
+      <a class="nav-item active" onclick="showPage('dashboard')">
+        <span class="icon">📊</span> لوحة التحكم
+      </a>
+      <div class="nav-section">إدارة</div>
+      <a class="nav-item" onclick="showPage('craftsmen')">
+        <span class="icon">🔧</span> الحرفيون
+      </a>
+      <a class="nav-item" onclick="showPage('clients')">
+        <span class="icon">👥</span> العملاء
+      </a>
+      <a class="nav-item" onclick="showPage('requests')">
+        <span class="icon">📋</span> الطلبات
+        <span class="badge" id="pending-badge">0</span>
+      </a>
+      <a class="nav-item" onclick="showPage('reviews')">
+        <span class="icon">⭐</span> التقييمات
+      </a>
+      <div class="nav-section">المالية</div>
+      <a class="nav-item" onclick="showPage('sub_requests')">
+        <span class="icon">💳</span> طلبات الاشتراك <span id="sub-badge" style="background:var(--red);color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:4px;display:none">0</span>
+      </a>
+      <a class="nav-item" onclick="showPage('finance')">
+        <span class="icon">💰</span> الإيرادات
+      </a>
+      <a class="nav-item" onclick="showPage('subscriptions')">
+        <span class="icon">🔄</span> الاشتراكات
+      </a>
+      <div class="nav-section">النظام</div>
+      <a class="nav-item" onclick="showPage('settings')">
+        <span class="icon">⚙️</span> الإعدادات
+      </a>
+    </nav>
+    <div style="padding:16px; border-top:1px solid var(--border);">
+      <div style="font-size:12px; color:var(--text2);">🟢 API متصل</div>
+      <div style="font-size:11px; color:var(--text2); margin-top:4px;" id="api-url-display"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Config bar (shown when API not set) -->
+    <div class="config-bar" id="config-bar">
+      <label>🔗 عنوان API:</label>
+      <input type="text" id="api-url-input" placeholder="http://127.0.0.1:5000" value="http://127.0.0.1:5000">
+      <label>🔑 Admin Token:</label>
+      <input type="text" id="admin-token-input" placeholder="Bearer eyJ..." style="width:300px;">
+      <button class="btn btn-primary" onclick="connectAPI()">اتصال</button>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div class="page active" id="page-dashboard">
+      <div class="header">
+        <div>
+          <div class="page-title">لوحة التحكم</div>
+          <div style="font-size:12px; color:var(--text2); margin-top:4px;" id="last-refresh">—</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="refreshAll()">🔄 تحديث</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">إيرادات الشهر</div>
+          <div class="stat-value" id="stat-revenue">—</div>
+          <div class="stat-change up" id="stat-revenue-change">— دج</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">🔧</div>
+          <div class="stat-label">الحرفيون النشطون</div>
+          <div class="stat-value" id="stat-craftsmen">—</div>
+          <div class="stat-change up" id="stat-craftsmen-sub">— مشترك</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon">👥</div>
+          <div class="stat-label">العملاء</div>
+          <div class="stat-value" id="stat-clients">—</div>
+          <div class="stat-change up" id="stat-clients-new">جديد اليوم: —</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">📋</div>
+          <div class="stat-label">الطلبات النشطة</div>
+          <div class="stat-value" id="stat-requests">—</div>
+          <div class="stat-change" id="stat-requests-pending">— معلق</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <!-- Recent requests -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">آخر الطلبات</div>
+            <div class="card-action" onclick="showPage('requests')">عرض الكل</div>
+          </div>
+          <table class="table">
+            <thead><tr>
+              <th>العنوان</th><th>الحالة</th><th>المدينة</th><th>التاريخ</th>
+            </tr></thead>
+            <tbody id="recent-requests">
+              <tr><td colspan="4" style="text-align:center;color:var(--text2);padding:20px">
+                <span class="spinner"></span>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Specialty distribution -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">توزيع الاختصاصات</div>
+          </div>
+          <div class="bar-chart" id="spec-chart">
+            <div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">
+              <span class="spinner"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Top craftsmen -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">أفضل الحرفيين</div>
+            <div class="card-action" onclick="showPage('craftsmen')">عرض الكل</div>
+          </div>
+          <table class="table">
+            <thead><tr><th>الحرفي</th><th>التقييم</th><th>الأعمال</th><th>الحالة</th></tr></thead>
+            <tbody id="top-craftsmen">
+              <tr><td colspan="4" style="text-align:center;padding:20px"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Revenue breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">مصادر الإيراد</div>
+          </div>
+          <div id="revenue-breakdown" style="padding:8px 0">
+            <div style="color:var(--text2);font-size:13px;text-align:center;padding:20px"><span class="spinner"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Craftsmen Page -->
+    <div class="page" id="page-craftsmen">
+      <div class="header">
+        <div class="page-title">إدارة الحرفيين</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadCraftsmen()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="🔍 البحث بالاسم أو التخصص..." id="craftsmen-search" oninput="filterCraftsmen()">
+        <select class="filter-select" id="craftsmen-filter" onchange="filterCraftsmen()">
+          <option value="">كل الحالات</option>
+          <option value="verified">موثقون</option>
+          <option value="unverified">غير موثقين</option>
+          <option value="subscribed">مشتركون</option>
+        </select>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>الحرفي</th><th>التخصص</th><th>المدينة</th><th>التقييم</th>
+            <th>الأعمال</th><th>التوثيق</th><th>الاشتراك</th><th>إجراء</th>
+          </tr></thead>
+          <tbody id="craftsmen-table">
+            <tr><td colspan="8" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Clients Page -->
+    <div class="page" id="page-clients">
+      <div class="header">
+        <div class="page-title">إدارة العملاء</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadClients()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="🔍 البحث بالاسم أو الهاتف..." id="clients-search" oninput="filterClients()">
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>العميل</th><th>رقم الهاتف</th><th>الطلبات</th><th>تاريخ التسجيل</th><th>الحالة</th><th>إجراء</th>
+          </tr></thead>
+          <tbody id="clients-table">
+            <tr><td colspan="6" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Requests Page -->
+    <div class="page" id="page-requests">
+      <div class="header">
+        <div class="page-title">إدارة الطلبات</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadRequests()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="🔍 البحث في الطلبات..." id="requests-search" oninput="filterRequests()">
+        <select class="filter-select" id="requests-filter" onchange="filterRequests()">
+          <option value="">كل الحالات</option>
+          <option value="pending">معلق</option>
+          <option value="accepted">مقبول</option>
+          <option value="in_progress">جاري</option>
+          <option value="completed">مكتمل</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>العنوان</th><th>العميل</th><th>الحرفي</th><th>المدينة</th>
+            <th>الحالة</th><th>السعر</th><th>التاريخ</th>
+          </tr></thead>
+          <tbody id="requests-table">
+            <tr><td colspan="7" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reviews Page -->
+    <div class="page" id="page-reviews">
+      <div class="header">
+        <div class="page-title">التقييمات</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadReviews()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>المراجع</th><th>الحرفي</th><th>التقييم</th><th>التعليق</th><th>التاريخ</th>
+          </tr></thead>
+          <tbody id="reviews-table">
+            <tr><td colspan="5" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Subscription Requests Page -->
+    <div class="page" id="page-sub_requests">
+      <div class="header">
+        <div class="page-title">💳 طلبات الاشتراك</div>
+        <div class="header-actions">
+          <select class="filter-select" id="sub-req-filter" onchange="loadSubRequests()">
+            <option value="pending">معلقة</option>
+            <option value="approved">مقبولة</option>
+            <option value="rejected">مرفوضة</option>
+          </select>
+          <button class="btn btn-ghost" onclick="loadSubRequests()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div id="sub-requests-list"><div class="empty-state"><div class="empty-icon">💳</div><div>لا توجد طلبات</div></div></div>
+    </div>
+
+    <!-- Finance Page -->
+    <div class="page" id="page-finance">
+      <div class="header">
+        <div class="page-title">الإيرادات والمالية</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadFinance()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card gold">
+          <div class="stat-label">إجمالي الإيرادات</div>
+          <div class="stat-value" id="fin-total">—</div>
+          <div class="stat-change up">منذ البداية</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">عمولات الشهر</div>
+          <div class="stat-value" id="fin-commission">—</div>
+          <div class="stat-change up">10% من المدفوعات</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">اشتراكات الشهر</div>
+          <div class="stat-value" id="fin-subscriptions">—</div>
+          <div class="stat-change up">1500-2000 دج/شهر</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">المعاملات الأخيرة</div></div>
+        <table class="table">
+          <thead><tr><th>النوع</th><th>الحرفي</th><th>المبلغ</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+          <tbody id="transactions-table">
+            <tr><td colspan="5" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Subscriptions Page -->
+    <div class="page" id="page-subscriptions">
+      <div class="header">
+        <div class="page-title">الاشتراكات</div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadSubscriptions()">🔄 تحديث</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>الحرفي</th><th>الخطة</th><th>السعر</th><th>تاريخ البداية</th><th>تاريخ الانتهاء</th><th>الحالة</th>
+          </tr></thead>
+          <tbody id="subs-table">
+            <tr><td colspan="6" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="page-settings">
+      <div class="header"><div class="page-title">الإعدادات</div></div>
+      <div class="card" style="max-width:500px">
+        <div class="card-header"><div class="card-title">إعدادات الاتصال</div></div>
+        <div class="form-group">
+          <label class="form-label">عنوان API</label>
+          <input class="form-input" type="text" id="settings-api-url" value="http://127.0.0.1:5000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admin Token</label>
+          <input class="form-input" type="text" id="settings-token" placeholder="Bearer eyJ...">
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">حفظ الإعدادات</button>
+      </div>
+      <div class="card" style="max-width:500px; margin-top:16px">
+        <div class="card-header"><div class="card-title">إعدادات التطبيق</div></div>
+        <div class="form-group">
+          <label class="form-label">نسبة العمولة (%)</label>
+          <input class="form-input" type="number" value="10" min="0" max="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">سعر الاشتراك الشهري (دج)</label>
+          <input class="form-input" type="number" value="1500">
+        </div>
+        <button class="btn btn-primary" onclick="toast('تم حفظ الإعدادات','success')">حفظ</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">تم</span>
+</div>
+
+<!-- Craftsman detail modal -->
+<div class="modal-bg" id="craftsman-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="card-title" id="modal-craftsman-name">تفاصيل الحرفي</div>
+      <button class="modal-close" onclick="closeModal('craftsman-modal')">✕</button>
+    </div>
+    <div id="modal-craftsman-body"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" id="modal-verify-btn" onclick="verifyCraftsman()">✅ توثيق</button>
+      <button class="btn btn-ghost" style="color:var(--red)" id="modal-suspend-btn" onclick="suspendUser()">🚫 تعليق</button>
+      <button class="btn btn-ghost" onclick="closeModal('craftsman-modal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let API = localStorage.getItem('hirafi_api') || 'http://127.0.0.1:5000';
+let TOKEN = localStorage.getItem('hirafi_token') || '';
+let allCraftsmen = [], allClients = [], allRequests = [], allReviews = [];
+let selectedCraftsman = null;
+
+// ── Init ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('api-url-input').value = API;
+  document.getElementById('admin-token-input').value = TOKEN;
+  document.getElementById('settings-api-url').value = API;
+  document.getElementById('settings-token').value = TOKEN;
+  document.getElementById('api-url-display').textContent = API;
+  if (TOKEN) connectAPI();
+});
+
+function connectAPI() {
+  API = document.getElementById('api-url-input').value.trim() || document.getElementById('settings-api-url').value.trim();
+  TOKEN = document.getElementById('admin-token-input').value.trim() || document.getElementById('settings-token').value.trim();
+  localStorage.setItem('hirafi_api', API);
+  localStorage.setItem('hirafi_token', TOKEN);
+  document.getElementById('api-url-display').textContent = API;
+  document.getElementById('config-bar').style.display = 'none';
+  refreshAll();
+  toast('تم الاتصال بـ API بنجاح', 'success');
+}
+
+// ── API Helper ─────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  try {
+    const res = await fetch(API + path, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': TOKEN,
+        ...(opts.headers || {})
+      }
+    });
+    return await res.json();
+  } catch(e) {
+    return { error: e.message };
+  }
+}
+
+// ── Navigation ─────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.currentTarget && event.currentTarget.classList.add('active');
+
+  const loaders = {
+    craftsmen: loadCraftsmen,
+    clients: loadClients,
+    requests: loadRequests,
+    reviews: loadReviews,
+    finance: loadFinance,
+    subscriptions: loadSubscriptions,
+    sub_requests: loadSubRequests,
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────
+async function refreshAll() {
+  document.getElementById('last-refresh').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
+  const [stats, revenue, requests, craftsmen] = await Promise.all([
+    api('/api/admin/stats'),
+    api('/api/admin/revenue'),
+    api('/api/admin/requests'),
+    api('/api/admin/craftsmen'),
+  ]);
+
+  if (!stats.error) {
+    document.getElementById('stat-revenue').textContent = fmtDZD(stats.revenue_month || 0);
+    document.getElementById('stat-craftsmen').textContent = stats.craftsmen || 0;
+    document.getElementById('stat-craftsmen-sub').textContent = (stats.craftsmen_subscribed || 0) + ' مشترك';
+    document.getElementById('stat-clients').textContent = stats.clients || 0;
+    document.getElementById('stat-requests').textContent = (stats.requests_active || 0);
+    document.getElementById('stat-requests-pending').textContent = (stats.requests_pending || 0) + ' معلق';
+    document.getElementById('pending-badge').textContent = stats.requests_pending || 0;
+  }
+
+  if (!requests.error && Array.isArray(requests)) {
+    renderRecentRequests(requests.slice(0, 6));
+  }
+
+  if (!craftsmen.error && Array.isArray(craftsmen)) {
+    allCraftsmen = craftsmen;
+    renderTopCraftsmen(craftsmen.sort((a,b) => b.rating - a.rating).slice(0,5));
+    renderSpecChart(craftsmen);
+  }
+
+  if (!revenue.error && Array.isArray(revenue)) {
+    renderRevenueBreakdown(revenue);
+  }
+
+  // Load pending subscription requests count for badge
+  const subData = await api('/api/admin/subscription-requests?status=pending');
+  if (!subData.error) {
+    const count = (subData.requests || []).length;
+    const badge = document.getElementById('sub-badge');
+    if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+  }
+}
+
+function renderRecentRequests(reqs) {
+  document.getElementById('recent-requests').innerHTML = reqs.map(r => `
+    <tr>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title || '—'}</td>
+      <td><span class="status ${r.status}">${statusLabel(r.status)}</span></td>
+      <td>${r.city || '—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${fmtDate(r.created_at)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:20px">لا توجد طلبات</td></tr>';
+}
+
+function renderTopCraftsmen(craftsmen) {
+  document.getElementById('top-craftsmen').innerHTML = craftsmen.map(c => `
+    <tr>
+      <td>
+        <div class="user-cell">
+          <div class="avatar">${(c.name||'?')[0]}</div>
+          <div>
+            <div class="user-name">${c.name || '—'}</div>
+            <div class="user-phone">${c.city || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="stars">${'★'.repeat(Math.round(c.rating||0))}</span> ${(c.rating||0).toFixed(1)}</td>
+      <td>${c.total_jobs || 0}</td>
+      <td><span class="status ${c.is_verified ? 'verified' : 'unverified'}">${c.is_verified ? 'موثق' : 'غير موثق'}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text2)">لا يوجد</td></tr>';
+}
+
+function renderSpecChart(craftsmen) {
+  const specCount = {};
+  craftsmen.forEach(c => {
+    (c.specialties_str || '').split(',').filter(Boolean).forEach(s => {
+      specCount[s.trim()] = (specCount[s.trim()] || 0) + 1;
+    });
+  });
+  const sorted = Object.entries(specCount).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const max = Math.max(...sorted.map(s=>s[1]), 1);
+  document.getElementById('spec-chart').innerHTML = sorted.map(([name, count]) => `
+    <div class="bar-row">
+      <div class="bar-label">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${count/max*100}%"></div></div>
+      <div class="bar-val">${count}</div>
+    </div>
+  `).join('') || '<div style="color:var(--text2);text-align:center;padding:20px">لا توجد بيانات</div>';
+}
+
+function renderRevenueBreakdown(revenue) {
+  const map = {};
+  revenue.forEach(r => { map[r.type] = r; });
+  const items = [
+    { key: 'commission',    label: 'العمولات',   icon: '💹', color: 'var(--primary)' },
+    { key: 'subscription',  label: 'الاشتراكات', icon: '🔄', color: 'var(--blue)' },
+    { key: 'top_up',        label: 'الشحن',      icon: '💳', color: 'var(--green)' },
+  ];
+  const total = Object.values(map).reduce((s,r) => s + (r.total||0), 0) || 1;
+  document.getElementById('revenue-breakdown').innerHTML = items.map(item => {
+    const row = map[item.key];
+    const val = row ? row.total : 0;
+    const pct = Math.round(val / total * 100);
+    return `
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span>${item.icon} ${item.label}</span>
+          <span style="color:var(--text2)">${fmtDZD(val)} (${pct}%)</span>
+        </div>
+        <div class="bar-track" style="height:10px">
+          <div class="bar-fill" style="width:${pct}%;background:${item.color}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Craftsmen ──────────────────────────────────────────────────────
+async function loadCraftsmen() {
+  document.getElementById('craftsmen-table').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px"><span class="spinner"></span></td></tr>';
+  const data = await api('/api/admin/craftsmen');
+  allCraftsmen = Array.isArray(data) ? data : [];
+  renderCraftsmen(allCraftsmen);
+}
+
+function filterCraftsmen() {
+  const q = document.getElementById('craftsmen-search').value.toLowerCase();
+  const f = document.getElementById('craftsmen-filter').value;
+  const filtered = allCraftsmen.filter(c => {
+    const match = !q || (c.name||'').toLowerCase().includes(q) || (c.specialties_str||'').toLowerCase().includes(q);
+    const fmatch = !f ||
+      (f === 'verified' && c.is_verified) ||
+      (f === 'unverified' && !c.is_verified) ||
+      (f === 'subscribed' && c.subscription_active);
+    return match && fmatch;
+  });
+  renderCraftsmen(filtered);
+}
+
+function renderCraftsmen(craftsmen) {
+  document.getElementById('craftsmen-table').innerHTML = craftsmen.map(c => `
+    <tr>
+      <td>
+        <div class="user-cell">
+          <div class="avatar">${(c.name||'?')[0]}</div>
+          <div>
+            <div class="user-name">${c.name||'—'}</div>
+            <div class="user-phone">${c.phone||''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:12px">${(c.specialties_str||'—').split(',')[0]}</td>
+      <td>${c.city||'—'}</td>
+      <td><span class="stars">★</span> ${(c.rating||0).toFixed(1)} (${c.total_reviews||0})</td>
+      <td>${c.total_jobs||0}</td>
+      <td><span class="status ${c.is_verified?'verified':'unverified'}">${c.is_verified?'موثق':'غير موثق'}</span></td>
+      <td><span class="status ${c.subscription_active?'completed':'unverified'}">${c.subscription_active?'نشط':'غير نشط'}</span></td>
+      <td>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openCraftsman('${c.id}')">تفاصيل</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text2)">لا توجد نتائج</td></tr>';
+}
+
+async function openCraftsman(id) {
+  const c = allCraftsmen.find(x => x.id === id);
+  if (!c) return;
+  selectedCraftsman = c;
+  document.getElementById('modal-craftsman-name').textContent = c.name || '—';
+  document.getElementById('modal-craftsman-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+      <div><span style="color:var(--text2)">الهاتف:</span> ${c.phone||'—'}</div>
+      <div><span style="color:var(--text2)">المدينة:</span> ${c.city||'—'}</div>
+      <div><span style="color:var(--text2)">الخبرة:</span> ${c.experience_years||0} سنوات</div>
+      <div><span style="color:var(--text2)">التقييم:</span> ★ ${(c.rating||0).toFixed(1)}</div>
+      <div><span style="color:var(--text2)">الأعمال:</span> ${c.total_jobs||0}</div>
+      <div><span style="color:var(--text2)">المحفظة:</span> ${fmtDZD(c.wallet_balance||0)}</div>
+      <div><span style="color:var(--text2)">السعر:</span> ${fmtDZD(c.price_min)} — ${fmtDZD(c.price_max)}</div>
+      <div><span style="color:var(--text2)">الاشتراك:</span> ${c.subscription_active?'✅ نشط':'❌ غير نشط'}</div>
+    </div>
+    <div style="margin-top:12px;padding:12px;background:var(--card2);border-radius:8px;font-size:13px;color:var(--text2)">
+      ${c.bio||'لا يوجد وصف'}
+    </div>
+  `;
+  document.getElementById('modal-verify-btn').textContent = c.is_verified ? '✅ موثق بالفعل' : '✅ توثيق';
+  document.getElementById('craftsman-modal').classList.add('open');
+}
+
+async function verifyCraftsman() {
+  if (!selectedCraftsman) return;
+  const res = await api(`/api/admin/craftsmen/${selectedCraftsman.id}/verify`, { method: 'PATCH' });
+  if (!res.error) {
+    toast('تم توثيق الحرفي بنجاح', 'success');
+    closeModal('craftsman-modal');
+    loadCraftsmen();
+  } else {
+    toast('خطأ: ' + (res.error || 'فشل التوثيق'), 'error');
+  }
+}
+
+async function suspendUser() {
+  if (!selectedCraftsman) return;
+  const uid = selectedCraftsman.user_id;
+  if (!uid) return toast('لم يتم العثور على المستخدم', 'error');
+  const res = await api(`/api/admin/users/${uid}/suspend`, { method: 'PATCH' });
+  if (!res.error) {
+    toast('تم تعليق الحساب', 'success');
+    closeModal('craftsman-modal');
+    loadCraftsmen();
+  } else {
+    toast('خطأ: ' + res.error, 'error');
+  }
+}
+
+// ── Clients ────────────────────────────────────────────────────────
+async function loadClients() {
+  const data = await api('/api/admin/users?role=client');
+  allClients = Array.isArray(data) ? data : (data.users || []);
+  renderClients(allClients);
+}
+
+function filterClients() {
+  const q = document.getElementById('clients-search').value.toLowerCase();
+  renderClients(allClients.filter(c => !q || (c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q)));
+}
+
+function renderClients(clients) {
+  document.getElementById('clients-table').innerHTML = clients.map(c => `
+    <tr>
+      <td>
+        <div class="user-cell">
+          <div class="avatar">${(c.name||'?')[0]}</div>
+          <div>
+            <div class="user-name">${c.name||'—'}</div>
+          </div>
+        </div>
+      </td>
+      <td>${c.phone||'—'}</td>
+      <td>${c.request_count||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${fmtDate(c.created_at)}</td>
+      <td><span class="status ${c.is_active?'completed':'cancelled'}">${c.is_active?'نشط':'معلق'}</span></td>
+      <td>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red)"
+          onclick="suspendClient('${c.id}')">تعليق</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text2)">لا يوجد عملاء</td></tr>';
+}
+
+async function suspendClient(id) {
+  const res = await api(`/api/admin/users/${id}/suspend`, { method: 'PATCH' });
+  res.error ? toast('خطأ: ' + res.error, 'error') : (toast('تم تعليق العميل', 'success'), loadClients());
+}
+
+// ── Requests ───────────────────────────────────────────────────────
+async function loadRequests() {
+  const data = await api('/api/admin/requests');
+  allRequests = Array.isArray(data) ? data : [];
+  renderRequests(allRequests);
+}
+
+function filterRequests() {
+  const q = document.getElementById('requests-search').value.toLowerCase();
+  const f = document.getElementById('requests-filter').value;
+  const filtered = allRequests.filter(r =>
+    (!q || (r.title||'').toLowerCase().includes(q) || (r.city||'').toLowerCase().includes(q)) &&
+    (!f || r.status === f)
+  );
+  renderRequests(filtered);
+}
+
+function renderRequests(reqs) {
+  document.getElementById('requests-table').innerHTML = reqs.map(r => `
+    <tr>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title||'—'}</td>
+      <td>${r.client_name||'—'}</td>
+      <td>${r.craftsman_name||'غير محدد'}</td>
+      <td>${r.city||'—'}</td>
+      <td><span class="status ${r.status}">${statusLabel(r.status)}</span></td>
+      <td>${r.price_agreed ? fmtDZD(r.price_agreed) : '—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${fmtDate(r.created_at)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">لا توجد طلبات</td></tr>';
+}
+
+// ── Reviews ────────────────────────────────────────────────────────
+async function loadReviews() {
+  // Load reviews from a craftsman with reviews
+  const craftsman = allCraftsmen[0];
+  if (!craftsman) { allCraftsmen.length === 0 && await loadCraftsmen(); }
+  let reviews = [];
+  for (const c of allCraftsmen.slice(0, 5)) {
+    const d = await api(`/api/reviews/craftsman/${c.user_id}`);
+    if (d.reviews) reviews = [...reviews, ...d.reviews.map(r => ({...r, craftsman_name: c.name}))];
+  }
+  allReviews = reviews;
+  document.getElementById('reviews-table').innerHTML = reviews.map(r => `
+    <tr>
+      <td>${r.reviewer_name||'—'}</td>
+      <td>${r.craftsman_name||'—'}</td>
+      <td><span class="stars">${'★'.repeat(r.rating||0)}</span> ${r.rating}/5</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:12px">${r.comment||'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${fmtDate(r.created_at)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">لا توجد تقييمات</td></tr>';
+}
+
+// ── Subscription Requests ──────────────────────────────────────────
+async function loadSubRequests() {
+  const status = document.getElementById('sub-req-filter').value;
+  const data   = await api('/api/admin/subscription-requests?status=' + status);
+  const list   = data.requests || [];
+  const el     = document.getElementById('sub-requests-list');
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div>لا توجد طلبات ${status === 'pending' ? 'معلقة' : ''}</div></div>`;
+    return;
+  }
+
+  const METHOD_LABELS = { baridimob: '📱 BaridiMob', ccp: '🏦 CCP', cash: '💵 نقداً' };
+  const STATUS_STYLE  = {
+    pending:  'background:#FEF3E2;color:#E67E22',
+    approved: 'background:#E8F8EF;color:#27AE60',
+    rejected: 'background:#FDEDEC;color:#E74C3C',
+  };
+
+  el.innerHTML = list.map(r => `
+    <div class="table-row" style="flex-direction:column;align-items:stretch;gap:0;padding:0;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:14px;padding:16px">
+        <div class="avatar" style="width:44px;height:44px;font-size:20px">👷</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${r.name}</div>
+          <div style="font-size:12px;color:var(--text2)">${r.phone} • ${r.city || '—'}</div>
+        </div>
+        <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;${STATUS_STYLE[r.status] || ''}">
+          ${r.status === 'pending' ? '⌛ معلق' : r.status === 'approved' ? '✅ مقبول' : '❌ مرفوض'}
+        </span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--border)">
+        ${[
+          ['الخطة', r.plan === 'premium' ? '⭐ بريميوم' : '📦 أساسي'],
+          ['المبلغ', r.amount + ' دج'],
+          ['طريقة الدفع', METHOD_LABELS[r.payment_method] || r.payment_method],
+          ['رقم العملية', `<span style="font-family:monospace;color:var(--primary)">${r.reference || '—'}</span>`],
+        ].map(([k,v]) => `
+          <div style="background:var(--card2);padding:10px 14px">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:3px">${k}</div>
+            <div style="font-size:13px;font-weight:600">${v}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text2);padding:8px 16px">
+        📅 ${new Date(r.created_at).toLocaleString('ar-DZ')}
+        ${r.admin_note ? `• ملاحظة: ${r.admin_note}` : ''}
+      </div>
+      ${r.status === 'pending' ? `
+      <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
+        <button class="btn btn-primary" style="flex:1" onclick="reviewSubRequest('${r.id}','approve')">
+          ✅ تفعيل الاشتراك
+        </button>
+        <button class="btn" style="flex:1;background:var(--red);color:white" onclick="reviewSubRequest('${r.id}','reject')">
+          ❌ رفض
+        </button>
+      </div>` : ''}
+    </div>
+  `).join('');
+
+  // Update badge
+  if (status === 'pending') {
+    const badge = document.getElementById('sub-badge');
+    if (list.length > 0) { badge.textContent = list.length; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+  }
+}
+
+async function reviewSubRequest(id, action) {
+  const note = action === 'reject'
+    ? prompt('سبب الرفض (اختياري):') || ''
+    : '';
+  const res = await api(`/api/admin/subscription-requests/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action, note }),
+  });
+  if (res.error) { toast('خطأ: ' + res.error, 'error'); return; }
+  toast(action === 'approve' ? '✅ تم تفعيل الاشتراك وإشعار الحرفي' : '❌ تم رفض الطلب', action === 'approve' ? 'success' : 'error');
+  loadSubRequests();
+}
+
+// ── Finance ────────────────────────────────────────────────────────
+async function loadFinance() {
+  const [revenue, stats] = await Promise.all([api('/api/admin/revenue'), api('/api/admin/stats')]);
+  if (!stats.error) {
+    document.getElementById('fin-total').textContent = fmtDZD(stats.revenue_total || 0);
+  }
+  if (!revenue.error && Array.isArray(revenue)) {
+    const map = {};
+    revenue.forEach(r => { map[r.type] = r; });
+    document.getElementById('fin-commission').textContent = fmtDZD((map.commission||{}).total||0);
+    document.getElementById('fin-subscriptions').textContent = fmtDZD((map.subscription||{}).total||0);
+  }
+
+  // Transactions from craftsmen wallets
+  const data = await api('/api/admin/craftsmen');
+  const craftsmen = Array.isArray(data) ? data.slice(0,3) : [];
+  let txs = [];
+  for (const c of craftsmen) {
+    const wd = await api(`/api/payments/wallet`);
+    if (wd.transactions) txs = [...txs, ...wd.transactions.map(t => ({...t, craftsman_name: c.name}))];
+  }
+  // Use admin revenue data as fallback
+  document.getElementById('transactions-table').innerHTML = revenue && Array.isArray(revenue) ? revenue.map(r => `
+    <tr>
+      <td>${txTypeLabel(r.type)}</td>
+      <td>—</td>
+      <td style="color:${r.type==='commission'?'var(--green)':'var(--text)'}">${fmtDZD(r.total||0)}</td>
+      <td>—</td>
+      <td><span class="status completed">مكتمل</span></td>
+    </tr>
+  `).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text2)">لا توجد معاملات</td></tr>';
+}
+
+// ── Subscriptions ──────────────────────────────────────────────────
+async function loadSubscriptions() {
+  const data = await api('/api/admin/craftsmen');
+  const craftsmen = Array.isArray(data) ? data : [];
+  document.getElementById('subs-table').innerHTML = craftsmen.map(c => `
+    <tr>
+      <td>
+        <div class="user-cell">
+          <div class="avatar">${(c.name||'?')[0]}</div>
+          <div class="user-name">${c.name||'—'}</div>
+        </div>
+      </td>
+      <td>أساسي</td>
+      <td>1,500 دج</td>
+      <td style="font-size:12px;color:var(--text2)">—</td>
+      <td style="font-size:12px;color:var(--text2)">—</td>
+      <td><span class="status ${c.subscription_active?'completed':'cancelled'}">${c.subscription_active?'نشط':'منتهي'}</span></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text2)">لا توجد اشتراكات</td></tr>';
+}
+
+// ── Settings ───────────────────────────────────────────────────────
+function saveSettings() {
+  API = document.getElementById('settings-api-url').value;
+  TOKEN = document.getElementById('settings-token').value;
+  localStorage.setItem('hirafi_api', API);
+  localStorage.setItem('hirafi_token', TOKEN);
+  document.getElementById('api-url-display').textContent = API;
+  toast('تم حفظ الإعدادات', 'success');
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
+function fmtDZD(n) {
+  return new Intl.NumberFormat('ar-DZ', { style: 'decimal' }).format(n || 0) + ' دج';
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ar-DZ', { year:'numeric', month:'short', day:'numeric' });
+}
+
+function statusLabel(s) {
+  return { pending:'معلق', accepted:'مقبول', in_progress:'جاري', completed:'مكتمل', cancelled:'ملغي' }[s] || s;
+}
+
+function txTypeLabel(t) {
+  return { commission:'عمولة', subscription:'اشتراك', top_up:'شحن', withdrawal:'سحب', refund:'استرداد' }[t] || t;
+}
+
+function stars(n) {
+  return '★'.repeat(Math.round(n||0)) + '☆'.repeat(5 - Math.round(n||0));
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = type === 'success' ? '✅' : '❌';
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

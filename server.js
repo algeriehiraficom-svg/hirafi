@@ -47,6 +47,9 @@ app.use('/api/upload', require('./routes/upload'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/chat', require('./routes/chat'));
 
+// Admin dashboard static files
+app.use('/admin', express.static('public/admin'));
+
 // Socket.io setup
 const http = require('http');
 const server = http.createServer(app);

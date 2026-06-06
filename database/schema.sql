@@ -178,6 +178,21 @@ CREATE TABLE subscriptions (
 );
 
 -- ============================================================
+-- SUBSCRIPTION REQUESTS (admin approval)
+-- ============================================================
+CREATE TABLE subscription_requests (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID NOT NULL REFERENCES users(id),
+  plan            VARCHAR(20) DEFAULT 'basic' CHECK (plan IN ('basic','premium')),
+  amount          INT NOT NULL,
+  payment_method  VARCHAR(20) NOT NULL,
+  reference       VARCHAR(100),
+  admin_note      TEXT,
+  status          VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- NOTIFICATIONS
 -- ============================================================
 CREATE TABLE notifications (

@@ -123,4 +123,67 @@ router.get('/revenue', ...adminOnly, async (req, res) => {
   res.json(rows);
 });
 
+// ── PATCH /api/admin/craftsmen/:id/verify ───────────────────────
+router.patch('/craftsmen/:id/verify', ...adminOnly, async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await db.query(
+    'UPDATE craftsmen SET is_verified = true, is_available = true WHERE id = $1 RETURNING *',
+    [id]
+  );
+  if (!rows.length) return res.status(404).json({ error: 'Craftsman not found' });
+  res.json({ message: 'Craftsman verified', craftsman: rows[0] });
+});
+
+// ── GET /api/admin/users ───────────────────────────────────────
+router.get('/users', ...adminOnly, async (req, res) => {
+  const { role } = req.query;
+  let q = 'SELECT id, name, phone, created_at, is_active FROM users';
+  const params = [];
+  if (role) {
+    q += ' WHERE role = $1';
+    params.push(role);
+  }
+  const { rows } = await db.query(q + ' ORDER BY created_at DESC', params);
+  res.json(rows);
+});
+
+// ── GET /api/admin/subscription-requests ───────────────────────────
+router.get('/subscription-requests', ...adminOnly, async (req, res) => {
+  const { status } = req.query;
+  const { rows } = await db.query(
+    `SELECT sr.*, u.name, u.phone, u.city
+     FROM subscription_requests sr
+     JOIN users u ON u.id = sr.user_id
+     ${status ? 'WHERE sr.status = $1' : ''}
+     ORDER BY sr.created_at DESC`,
+    status ? [status] : []
+  );
+  res.json({ requests: rows });
+});
+
+// ── PATCH /api/admin/subscription-requests/:id ───────────────────
+router.patch('/subscription-requests/:id', ...adminOnly, async (req, res) => {
+  const { id } = req.params;
+  const { action, note } = req.body;
+  const status = action === 'approve' ? 'approved' : 'rejected';
+
+  const { rows } = await db.query(
+    'UPDATE subscription_requests SET status = $1, admin_note = $2 WHERE id = $3 RETURNING *',
+    [status, note || null, id]
+  );
+
+  if (!rows.length) return res.status(404).json({ error: 'Request not found' });
+
+  // If approved, activate subscription
+  if (action === 'approve') {
+    const { user_id } = rows[0];
+    await db.query(
+      'UPDATE craftsmen SET subscription_active = true, subscription_status = $1 WHERE user_id = $2',
+      ['active', user_id]
+    );
+  }
+
+  res.json({ message: action === 'approve' ? 'Subscription activated' : 'Request rejected' });
+});
+
 module.exports = router;
