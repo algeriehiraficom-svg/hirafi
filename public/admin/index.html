@@ -293,7 +293,7 @@
     <!-- Config bar (shown when API not set) -->
     <div class="config-bar" id="config-bar">
       <label>🔗 عنوان API:</label>
-      <input type="text" id="api-url-input" placeholder="http://127.0.0.1:5000" value="http://127.0.0.1:5000">
+      <input type="text" id="api-url-input" placeholder="http://127.0.0.1:5000" value="https://hirafi-production-7d14.up.railway.app">
       <label>🔑 Admin Token:</label>
       <input type="text" id="admin-token-input" placeholder="Bearer eyJ..." style="width:300px;">
       <button class="btn btn-primary" onclick="connectAPI()">اتصال</button>
@@ -581,7 +581,7 @@
         <div class="card-header"><div class="card-title">إعدادات الاتصال</div></div>
         <div class="form-group">
           <label class="form-label">عنوان API</label>
-          <input class="form-input" type="text" id="settings-api-url" value="http://127.0.0.1:5000">
+          <input class="form-input" type="text" id="settings-api-url" value="https://hirafi-production-7d14.up.railway.app">
         </div>
         <div class="form-group">
           <label class="form-label">Admin Token</label>
@@ -630,7 +630,7 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
-let API = localStorage.getItem('hirafi_api') || 'http://127.0.0.1:5000';
+let API = localStorage.getItem('hirafi_api') || 'https://hirafi-production-7d14.up.railway.app';
 let TOKEN = localStorage.getItem('hirafi_token') || '';
 let allCraftsmen = [], allClients = [], allRequests = [], allReviews = [];
 let selectedCraftsman = null;
