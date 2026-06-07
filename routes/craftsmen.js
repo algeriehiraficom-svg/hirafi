@@ -123,8 +123,35 @@ router.get('/nearby', requireAuth, async (req, res) => {
   res.json(rows.map(r => ({ ...r, distance_km: (r.distance_meters / 1000).toFixed(1) })));
 });
 
+// ── GET /api/craftsmen/me ───────────────────────────────────
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM craftsmen WHERE user_id = $1',
+      [req.user.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Craftsman profile not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Craftsman /me error:", err.message);
+    res.status(500).json({ error: "Failed to fetch craftsman profile" });
+  }
+});
+
 // ── GET /api/craftsmen/:id ───────────────────────────────────
 router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (!uuidRegex.test(id)) {
+    return res.status(400).json({ error: "Invalid craftsman ID" });
+  }
+
   const { rows } = await db.query(`
     SELECT
       c.*, u.name, u.phone, u.avatar_url,
