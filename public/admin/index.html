@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('api-url-display').textContent = API;
   if (TOKEN) {
     connectAPI();
-    setInterval(refreshAll, 5000); // Auto-refresh every 5 seconds
+    setInterval(refreshAll, 30000); // Auto-refresh every 30 seconds
   }
 });
 
