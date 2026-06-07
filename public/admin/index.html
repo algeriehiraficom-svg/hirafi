@@ -769,7 +769,7 @@ function renderTopCraftsmen(craftsmen) {
           </div>
         </div>
       </td>
-      <td><span class="stars">${'★'.repeat(Math.round(c.rating||0))}</span> ${(c.rating||0).toFixed(1)}</td>
+      <td><span class="stars">${'★'.repeat(Math.round(c.rating||0))}</span> ${(parseFloat(c.rating)||0).toFixed(1)}</td>
       <td>${c.total_jobs || 0}</td>
       <td><span class="status ${c.is_verified ? 'verified' : 'unverified'}">${c.is_verified ? 'موثق' : 'غير موثق'}</span></td>
     </tr>
@@ -857,7 +857,7 @@ function renderCraftsmen(craftsmen) {
       </td>
       <td style="font-size:12px">${(c.specialties_str||'—').split(',')[0]}</td>
       <td>${c.city||'—'}</td>
-      <td><span class="stars">★</span> ${(c.rating||0).toFixed(1)} (${c.total_reviews||0})</td>
+      <td><span class="stars">★</span> ${(parseFloat(c.rating)||0).toFixed(1)} (${c.total_reviews||0})</td>
       <td>${c.total_jobs||0}</td>
       <td><span class="status ${c.is_verified?'verified':'unverified'}">${c.is_verified?'موثق':'غير موثق'}</span></td>
       <td><span class="status ${c.subscription_active?'completed':'unverified'}">${c.subscription_active?'نشط':'غير نشط'}</span></td>
@@ -878,7 +878,7 @@ async function openCraftsman(id) {
       <div><span style="color:var(--text2)">الهاتف:</span> ${c.phone||'—'}</div>
       <div><span style="color:var(--text2)">المدينة:</span> ${c.city||'—'}</div>
       <div><span style="color:var(--text2)">الخبرة:</span> ${c.experience_years||0} سنوات</div>
-      <div><span style="color:var(--text2)">التقييم:</span> ★ ${(c.rating||0).toFixed(1)}</div>
+      <div><span style="color:var(--text2)">التقييم:</span> ★ ${(parseFloat(c.rating)||0).toFixed(1)}</div>
       <div><span style="color:var(--text2)">الأعمال:</span> ${c.total_jobs||0}</div>
       <div><span style="color:var(--text2)">المحفظة:</span> ${fmtDZD(c.wallet_balance||0)}</div>
       <div><span style="color:var(--text2)">السعر:</span> ${fmtDZD(c.price_min)} — ${fmtDZD(c.price_max)}</div>
