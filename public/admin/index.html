@@ -665,8 +665,8 @@ async function api(path, opts = {}) {
     const res = await fetch(API + path, {
       ...opts,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': TOKEN,
+'Content-Type': 'application/json',
+         'Authorization': TOKEN.startsWith('Bearer') ? TOKEN : 'Bearer ' + TOKEN,
         ...(opts.headers || {})
       }
     });

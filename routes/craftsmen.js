@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const db = require('../config/db');
+const { auth: requireAuth } = require('../middleware/auth');
 
 const validateCoordinates = (lat, lng) => {
   const numLat = parseFloat(lat);
@@ -8,35 +9,6 @@ const validateCoordinates = (lat, lng) => {
   if (numLat < -90 || numLat > 90) return false;
   if (numLng < -180 || numLng > 180) return false;
   return true;
-};
-
-const requireAuth = async (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'No token provided' });
-
-  try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Handle admin tokens
-    if (decoded.role === 'admin') {
-      return res.status(403).json({ error: 'Admin cannot register as craftsman' });
-    }
-
-    const { rows } = await db.query(
-      'SELECT id, phone, name, role, is_active FROM users WHERE id = $1',
-      [decoded.id]
-    );
-
-    if (!rows.length || !rows[0].is_active) {
-      return res.status(401).json({ error: 'Account not found or suspended' });
-    }
-
-    req.user = rows[0];
-    next();
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
 };
 
 const requireCraftsman = async (req, res, next) => {
