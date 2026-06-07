@@ -856,7 +856,7 @@ function renderCraftsmen(craftsmen) {
         </div>
       </td>
       <td style="font-size:12px">${(c.specialties_str||'—').split(',')[0]}</td>
-      <td>${c.city||'—'}</td>
+      <td>${c.wilaya || c.city || '—'}</td>
       <td><span class="stars">★</span> ${(parseFloat(c.rating)||0).toFixed(1)} (${c.total_reviews||0})</td>
       <td>${c.total_jobs||0}</td>
       <td><span class="status ${c.is_verified?'verified':'unverified'}">${c.is_verified?'موثق':'غير موثق'}</span></td>
@@ -876,7 +876,7 @@ async function openCraftsman(id) {
   document.getElementById('modal-craftsman-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
       <div><span style="color:var(--text2)">الهاتف:</span> ${c.phone||'—'}</div>
-      <div><span style="color:var(--text2)">المدينة:</span> ${c.city||'—'}</div>
+      <div><span style="color:var(--text2)">المدينة:</span> ${c.wilaya || c.city || '—'}</div>
       <div><span style="color:var(--text2)">الخبرة:</span> ${c.experience_years||0} سنوات</div>
       <div><span style="color:var(--text2)">التقييم:</span> ★ ${(parseFloat(c.rating)||0).toFixed(1)}</div>
       <div><span style="color:var(--text2)">الأعمال:</span> ${c.total_jobs||0}</div>
@@ -981,7 +981,7 @@ function renderRequests(reqs) {
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title||'—'}</td>
       <td>${r.client_name||'—'}</td>
       <td>${r.craftsman_name||'غير محدد'}</td>
-      <td>${r.city||'—'}</td>
+      <td>${r.wilaya || r.city || '—'}</td>
       <td><span class="status ${r.status}">${statusLabel(r.status)}</span></td>
       <td>${r.price_agreed ? fmtDZD(r.price_agreed) : '—'}</td>
       <td style="font-size:11px;color:var(--text2)">${fmtDate(r.created_at)}</td>
