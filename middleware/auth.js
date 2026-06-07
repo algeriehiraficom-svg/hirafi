@@ -4,6 +4,9 @@ const db = require('../config/db');
 const auth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
+    console.log('TOKEN RECEIVED=', token ? token.substring(0, 50) + '...' : null);
+    console.log('JWT_SECRET EXISTS=', !!process.env.JWT_SECRET);
+    
     if (!token) return res.status(401).json({ error: 'No token provided' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

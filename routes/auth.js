@@ -173,12 +173,16 @@ router.post('/admin-login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid admin credentials' });
   }
 
+  console.log('ADMIN LOGIN SECRET EXISTS=', !!process.env.JWT_SECRET);
+  
   const token = require('jsonwebtoken').sign(
     { role: 'admin' },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
 
+  console.log('ADMIN TOKEN GENERATED');
+  
   res.json({ token });
 });
 
