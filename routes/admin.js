@@ -6,13 +6,20 @@ const adminOnly = [auth, requireRole('admin')];
 
 // ── GET /api/admin/stats ─────────────────────────────────────
 router.get('/stats', ...adminOnly, async (req, res) => {
-  const [clients, craftsmen, activeRequests, pendingRequests, revenue] = await Promise.all([
+  const [clients, craftsmen, activeRequests, pendingRequests, revenue, specialtiesDist] = await Promise.all([
     db.query('SELECT COUNT(*) FROM users WHERE role = $1', ['client']),
     db.query('SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE subscription_active = true) as subscribed FROM craftsmen'),
     db.query("SELECT COUNT(*) FROM requests WHERE status IN ('accepted', 'in_progress')"),
     db.query("SELECT COUNT(*) FROM requests WHERE status = 'pending'"),
     db.query("SELECT COUNT(*) FROM requests WHERE status = 'completed'"),
     db.query("SELECT COALESCE(SUM(amount),0) AS total FROM transactions WHERE type IN ('subscription','commission') AND created_at >= date_trunc('month', NOW())"),
+    db.query(`
+      SELECT s.name_ar, COUNT(cs.craftsman_id) as count
+      FROM specialties s
+      LEFT JOIN craftsman_specialties cs ON cs.specialty_id = s.id
+      GROUP BY s.id, s.name_ar
+      ORDER BY count DESC
+    `),
   ]);
   res.json({
     clients: parseInt(clients.rows[0].count),
@@ -21,6 +28,7 @@ router.get('/stats', ...adminOnly, async (req, res) => {
     requests_active: parseInt(activeRequests.rows[0].count),
     requests_pending: parseInt(pendingRequests.rows[0].count),
     revenue_month: parseInt(revenue.rows[0].total),
+    specialtiesDistribution: specialtiesDist.rows.map(r => ({ name: r.name_ar, count: parseInt(r.count) })),
   });
 });
 
@@ -45,7 +53,14 @@ router.get('/craftsmen', ...adminOnly, async (req, res) => {
   params.push(limit, offset);
 
   const { rows } = await db.query(q, params);
-  res.json(rows);
+  
+  // Convert specialties array to comma-separated string for frontend
+  const result = rows.map(c => ({
+    ...c,
+    specialties_str: c.specialties ? c.specialties.join(', ') : '',
+  }));
+  
+  res.json(result);
 });
 
 // ── POST /api/admin/craftsmen/:id/approve ───────────────────
