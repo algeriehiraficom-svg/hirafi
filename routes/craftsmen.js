@@ -102,7 +102,7 @@ router.get('/nearby', requireAuth, async (req, res) => {
       JOIN users u ON u.id = c.user_id
       LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
       LEFT JOIN specialties s ON s.id = cs.specialty_id
-      WHERE c.is_active = TRUE
+      WHERE c.is_verified = TRUE
         AND c.is_available = TRUE
         AND c.subscription_active = TRUE
         AND ST_DWithin(c.location, ST_MakePoint($1, $2)::geography, $3)
@@ -123,7 +123,7 @@ router.get('/nearby', requireAuth, async (req, res) => {
     const { rows } = await db.query(q, params);
     res.json(rows.map(r => ({ ...r, distance_km: (r.distance_meters / 1000).toFixed(1) })));
   } catch (err) {
-    console.error("NEARBY ERROR:", err.message);
+    console.error("NEARBY ERROR:", err);
     res.status(500).json({ error: "Failed to fetch nearby craftsmen" });
   }
 });
