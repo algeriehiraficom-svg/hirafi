@@ -81,46 +81,51 @@ router.post('/register', requireAuth, async (req, res) => {
 
 // ── GET /api/craftsmen/nearby ────────────────────────────────
 router.get('/nearby', requireAuth, async (req, res) => {
-  const { lat, lng, radius = 10, specialty_id } = req.query;
-  if (!validateCoordinates(lat, lng)) {
-    return res.status(400).json({ error: 'Invalid GPS coordinates' });
+  try {
+    const { lat, lng, radius = 10, specialty_id } = req.query;
+    if (!validateCoordinates(lat, lng)) {
+      return res.status(400).json({ error: 'Invalid GPS coordinates' });
+    }
+
+    const lngNum = parseFloat(lng);
+    const latNum = parseFloat(lat);
+    const radiusMeters = parseFloat(radius) * 1000;
+
+    let q = `
+      SELECT
+        c.id, c.rating, c.total_jobs, c.price_min, c.price_max,
+        c.is_available, c.city,
+        u.name, u.avatar_url,
+        ST_Distance(c.location, ST_MakePoint($1, $2)::geography) AS distance_meters,
+        ARRAY_AGG(DISTINCT s.name_ar) FILTER (WHERE s.name_ar IS NOT NULL) AS specialties
+      FROM craftsmen c
+      JOIN users u ON u.id = c.user_id
+      LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
+      LEFT JOIN specialties s ON s.id = cs.specialty_id
+      WHERE c.is_active = TRUE
+        AND c.is_available = TRUE
+        AND c.subscription_active = TRUE
+        AND ST_DWithin(c.location, ST_MakePoint($1, $2)::geography, $3)
+    `;
+    const params = [lngNum, latNum, radiusMeters];
+
+    if (specialty_id) {
+      q += ` AND cs.specialty_id = $4`;
+      params.push(parseInt(specialty_id));
+    }
+
+    q += `
+      GROUP BY c.id, u.name, u.avatar_url
+      ORDER BY distance_meters ASC
+      LIMIT 30
+    `;
+
+    const { rows } = await db.query(q, params);
+    res.json(rows.map(r => ({ ...r, distance_km: (r.distance_meters / 1000).toFixed(1) })));
+  } catch (err) {
+    console.error("NEARBY ERROR:", err.message);
+    res.status(500).json({ error: "Failed to fetch nearby craftsmen" });
   }
-
-  const lngNum = parseFloat(lng);
-  const latNum = parseFloat(lat);
-  const radiusMeters = parseFloat(radius) * 1000;
-
-  let q = `
-    SELECT
-      c.id, c.rating, c.total_jobs, c.price_min, c.price_max,
-      c.is_available, c.city,
-      u.name, u.avatar_url,
-      ST_Distance(c.location, ST_MakePoint($1, $2)::geography) AS distance_meters,
-      ARRAY_AGG(DISTINCT s.name_ar) FILTER (WHERE s.name_ar IS NOT NULL) AS specialties
-    FROM craftsmen c
-    JOIN users u ON u.id = c.user_id
-    LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
-    LEFT JOIN specialties s ON s.id = cs.specialty_id
-    WHERE c.is_active = TRUE
-      AND c.is_available = TRUE
-      AND c.subscription_active = TRUE
-      AND ST_DWithin(c.location, ST_MakePoint($1, $2)::geography, $3)
-  `;
-  const params = [lngNum, latNum, radiusMeters];
-
-  if (specialty_id) {
-    q += ` AND cs.specialty_id = $4`;
-    params.push(parseInt(specialty_id));
-  }
-
-  q += `
-    GROUP BY c.id, u.name, u.avatar_url
-    ORDER BY distance_meters ASC
-    LIMIT 30
-  `;
-
-  const { rows } = await db.query(q, params);
-  res.json(rows.map(r => ({ ...r, distance_km: (r.distance_meters / 1000).toFixed(1) })));
 });
 
 // ── GET /api/craftsmen/me ───────────────────────────────────
