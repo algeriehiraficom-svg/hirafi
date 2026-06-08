@@ -135,7 +135,9 @@ router.get('/me', requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Craftsman profile not found" });
     }
 
-    res.json(rows[0]);
+    const craftsman = rows[0];
+    const approved = craftsman.is_verified ? 'approved' : 'pending';
+    res.json({ ...craftsman, approved });
   } catch (err) {
     console.error("Craftsman /me error:", err.message);
     res.status(500).json({ error: "Failed to fetch craftsman profile" });
