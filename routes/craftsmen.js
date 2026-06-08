@@ -131,10 +131,16 @@ router.get('/nearby', requireAuth, async (req, res) => {
 // ── GET /api/craftsmen/me ───────────────────────────────────
 router.get('/me', requireAuth, async (req, res) => {
   try {
-    const { rows } = await db.query(
-      'SELECT * FROM craftsmen WHERE user_id = $1',
-      [req.user.id]
-    );
+    const { rows } = await db.query(`
+      SELECT c.*, 
+             ARRAY_AGG(DISTINCT jsonb_build_object('id', s.id, 'name_ar', s.name_ar, 'icon', s.icon))
+               FILTER (WHERE s.id IS NOT NULL) AS specialties
+      FROM craftsmen c
+      LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
+      LEFT JOIN specialties s ON s.id = cs.specialty_id
+      WHERE c.user_id = $1
+      GROUP BY c.id
+    `, [req.user.id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Craftsman profile not found" });
@@ -142,7 +148,8 @@ router.get('/me', requireAuth, async (req, res) => {
 
     const craftsman = rows[0];
     const approved = craftsman.is_verified ? 'approved' : 'pending';
-    res.json({ ...craftsman, approved });
+    const status = craftsman.is_verified ? 'approved' : 'pending';
+    res.json({ ...craftsman, approved, status });
   } catch (err) {
     console.error("Craftsman /me error:", err.message);
     res.status(500).json({ error: "Failed to fetch craftsman profile" });
