@@ -123,7 +123,7 @@ router.get('/nearby', requireAuth, async (req, res) => {
     const { rows } = await db.query(q, params);
     res.json(rows.map(r => ({ ...r, distance_km: (r.distance_meters / 1000).toFixed(1) })));
   } catch (err) {
-    console.error("NEARBY ERROR:", err);
+    console.error("NEARBY ERROR FULL =", err);
     res.status(500).json({ error: "Failed to fetch nearby craftsmen" });
   }
 });
