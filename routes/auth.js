@@ -88,31 +88,8 @@ router.post('/verify-otp',
         user = rows[0];
       }
 
-      if (user.role === 'craftsman') {
-        await client.query(
-          `INSERT INTO craftsmen (
-              user_id,
-              is_verified,
-              is_available,
-              subscription_active,
-              wallet_balance,
-              total_reviews,
-              total_jobs
-          )
-          VALUES (
-              $1,
-              FALSE,
-              FALSE,
-              FALSE,
-              0,
-              0,
-              0
-          )
-          ON CONFLICT (user_id)
-          DO NOTHING`,
-          [user.id]
-        );
-      }
+      // verify-otp - ONLY verifies OTP and issues JWT (no craftsman creation)
+      // Craftsman profile must be created via /api/craftsmen/register
 
       await client.query('COMMIT');
 
