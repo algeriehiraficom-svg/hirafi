@@ -634,6 +634,7 @@ let API = localStorage.getItem('hirafi_api') || 'https://hirafi-production-7d14.
 let TOKEN = localStorage.getItem('hirafi_token') || '';
 let allCraftsmen = [], allClients = [], allRequests = [], allReviews = [];
 let selectedCraftsman = null;
+let refreshTimer = null;
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -644,8 +645,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('api-url-display').textContent = API;
   if (TOKEN) {
     connectAPI();
-    setInterval(refreshAll, 30000); // Auto-refresh every 30 seconds
+    refreshTimer = setInterval(refreshAll, 30000); // Auto-refresh every 30 seconds
   }
+  
+  // Cleanup on page unload to prevent memory leaks
+  window.addEventListener('beforeunload', () => {
+    if (refreshTimer) clearInterval(refreshTimer);
+  });
 });
 
 function connectAPI() {
