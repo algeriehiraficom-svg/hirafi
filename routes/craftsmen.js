@@ -102,7 +102,7 @@ router.get('/nearby', requireAuth, async (req, res) => {
       JOIN users u ON u.id = c.user_id
       LEFT JOIN craftsman_specialties cs ON cs.craftsman_id = c.id
       LEFT JOIN specialties s ON s.id = cs.specialty_id
-      WHERE c.is_verified = TRUE
+WHERE c.is_verified = TRUE AND c.is_available = TRUE
         AND c.is_available = TRUE
         AND c.subscription_active = TRUE
         AND ST_DWithin(c.location, ST_MakePoint($1, $2)::geography, $3)
@@ -314,7 +314,15 @@ UPDATE craftsmen SET
     }
   }
 
-  res.json({ success: true });
+  const { rows: updated } = await db.query('SELECT * FROM craftsmen WHERE user_id = $1', [userId]);
+  const row = updated[0] || {};
+  res.json({
+    success: true,
+    craftsman: {
+      ...row,
+      status: row.is_verified ? 'approved' : 'pending'
+    }
+  });
 });
 
 // ── GET /api/craftsmen/specialties/all ──────────────────────
