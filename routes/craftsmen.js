@@ -273,27 +273,29 @@ router.post('/profile', requireAuth, requireCraftsman, async (req, res) => {
 
   if (existing.length) {
     await db.query(`
-      UPDATE craftsmen SET
-        profile_completed = true,
-        gps_lat = $1,
-        gps_lng = $2,
-        category = $3,
-        status = 'pending',
-        location = ST_MakePoint($2, $1)::geography,
-        updated_at = NOW()
-      WHERE user_id = $4
+UPDATE craftsmen SET
+         profile_completed = true,
+         gps_lat = $1,
+         gps_lng = $2,
+         category = $3,
+         is_verified = FALSE,
+         is_available = FALSE,
+         location = ST_MakePoint($2, $1)::geography,
+         updated_at = NOW()
+       WHERE user_id = $4
     `, [lat, lng, category, userId]);
   } else {
     await db.query(`
       INSERT INTO craftsmen (
         user_id,
-        status,
+        is_verified,
+        is_available,
         profile_completed,
         gps_lat,
         gps_lng,
         category,
         location
-      ) VALUES ($1, 'pending', true, $2, $3, $4, ST_MakePoint($3, $2)::geography)
+      ) VALUES ($1, FALSE, FALSE, true, $2, $3, $4, ST_MakePoint($3, $2)::geography)
     `, [userId, lat, lng, category]);
   }
 
@@ -347,7 +349,7 @@ router.get('/search', async (req, res) => {
       )) AS distance
     FROM craftsmen c
     JOIN users u ON u.id = c.user_id
-    WHERE c.status = 'active'
+    WHERE c.is_verified = TRUE
       AND (6371 * acos(
         cos(radians($1)) *
         cos(radians(ST_Y(c.location::geometry))) *
